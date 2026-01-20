@@ -1,21 +1,9 @@
 import * as React from "react"
-import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-} from "lucide-react"
+import { FolderKanban, Users, UsersRound } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
@@ -26,7 +14,6 @@ import {
 import useHttp from "@/hooks/use-http"
 import { ProjectSwitcher } from "./project-switcher"
 
-// This is sample data.
 const data = {
   user: {
     name: "shadcn",
@@ -34,120 +21,58 @@ const data = {
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
-    // {
-    //   title: "Playground",
-    //   url: "#",
-    //   icon: SquareTerminal,
-    //   isActive: true,
-    //   items: [
-    //     {
-    //       title: "History",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Starred",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Settings",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: "Models",
-    //   url: "#",
-    //   icon: Bot,
-    //   items: [
-    //     {
-    //       title: "Genesis",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Explorer",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Quantum",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: "Documentation",
-    //   url: "#",
-    //   icon: BookOpen,
-    //   items: [
-    //     {
-    //       title: "Introduction",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Get Started",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Tutorials",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Changelog",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: "Settings",
-    //   url: "#",
-    //   icon: Settings2,
-    //   items: [
-    //     {
-    //       title: "General",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Team",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Billing",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Limits",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
-  ],
-  projects: [
-    // {
-    //   name: "Design Engineering",
-    //   url: "#",
-    //   icon: Frame,
-    // },
-    // {
-    //   name: "Sales & Marketing",
-    //   url: "#",
-    //   icon: PieChart,
-    // },
-    // {
-    //   name: "Travel",
-    //   url: "#",
-    //   icon: Map,
-    // },
+    {
+      title: "Projects",
+      url: "/admin/projects",
+      icon: FolderKanban,
+      items: [
+        {
+          title: "Manage Projects",
+          url: "/admin/project",
+        },
+      ],
+    },
+    {
+      title: "Users",
+      url: "/admin/users",
+      icon: Users,
+      items: [
+        {
+          title: "Manage Users",
+          url: "/admin/users",
+        },
+      ],
+    },
+    {
+      title: "Teams",
+      url: "/admin/teams",
+      icon: UsersRound,
+      items: [
+        {
+          title: "Manage Teams",
+          url: "/admin/teams",
+        },
+      ],
+    },
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-
-  const httpHook = useHttp()
-  const [projects, setProjects] = React.useState<any[]>([])
+export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const http = useHttp()
+  const [projects, setProjects] = React.useState<[]>([])
 
   const getProjects = async () => {
-    const response = await httpHook.sendRequest(import.meta.env.VITE_BACKEND_API_URL + "/Projects")
+    try {
+      const response = await http.sendRequest(
+        `${import.meta.env.VITE_BACKEND_API_URL}/Projects`
+      )
 
-    if (response.success) setProjects(response.data);
+      if (response?.success) {
+        setProjects(response.data)
+      }
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   React.useEffect(() => {
@@ -159,13 +84,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <ProjectSwitcher projects={projects} />
       </SidebarHeader>
+
       <SidebarContent>
         <NavMain items={data.navMain} />
         <NavProjects />
       </SidebarContent>
+
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   )

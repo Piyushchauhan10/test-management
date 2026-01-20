@@ -38,7 +38,7 @@ const ProjectAddUpdate = () => {
     <Card>
       <CardHeader className='flex justify-between'>
         <h2 className="text-left">
-          {id ? 'Edit' : 'Update'} Product
+          {id ? 'Edit' : 'Update'} Project
         </h2>
         <Button asChild variant="default">
           <Link to="/admin/project">Back</Link>

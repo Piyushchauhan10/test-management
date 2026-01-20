@@ -1,4 +1,4 @@
-import React from "react"
+import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
@@ -16,40 +16,75 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-type AddUserForm = {
+type UserFormProps = {
+  update: boolean
+  userId?: string
+}
+
+type UserFormData = {
   username: string
   email: string
   role: string
 }
 
-export default function UserForm() {
+export default function UserForm({ update, userId }: UserFormProps) {
   const navigate = useNavigate()
   const http = useHttp()
 
-  const { register, handleSubmit, setValue } = useForm<AddUserForm>()
+  const { register, handleSubmit, setValue } = useForm<UserFormData>({
+    defaultValues: {
+      username: "",
+      email: "",
+      role: "",
+    },
+  })
 
-  const onSubmit = async (values: AddUserForm) => {
+  /* ===== FETCH USER (EDIT) ===== */
+  const fetchUser = async () => {
     try {
       const response = await http.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Users`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username: values.username,
-            email: values.email,
-            role: values.role,
-          }),
-        }
+        `${import.meta.env.VITE_BACKEND_API_URL}/Users/${userId}`
       )
 
-      if (!response) throw new Error()
+      if (response?.success && response.data) {
+        setValue("username", response.data.username)
+        setValue("email", response.data.email)
+        setValue("role", response.data.role)
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to load user")
+    }
+  }
 
-      toast.success("User created successfully")
+  useEffect(() => {
+    if (update && userId) {
+      fetchUser()
+    }
+  }, [update, userId])
+
+  /* ===== SUBMIT ===== */
+  const onSubmit = async (values: UserFormData) => {
+    try {
+      const url = update
+        ? `${import.meta.env.VITE_BACKEND_API_URL}/Users/${userId}`
+        : `${import.meta.env.VITE_BACKEND_API_URL}/Users`
+
+      const method = update ? "PUT" : "POST"
+
+      await http.sendRequest(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      })
+
+      toast.success(
+        update ? "User updated successfully" : "User created successfully"
+      )
       navigate("/admin/users")
     } catch (error) {
       console.error(error)
-      toast.error("Failed to create user")
+      toast.error(update ? "Failed to update user" : "Failed to create user")
     }
   }
 
@@ -90,7 +125,7 @@ export default function UserForm() {
           </div>
 
           <Button type="submit" className="w-full">
-            Add User
+            {update ? "Update User" : "Add User"}
           </Button>
         </form>
       </CardContent>

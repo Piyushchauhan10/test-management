@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
-import useHttp from "@/hooks/use-http"
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import useHttp from "@/hooks/use-http";
 
 import {
   flexRender,
@@ -13,7 +13,7 @@ import {
   type SortingState,
   type ColumnFiltersState,
   type VisibilityState,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
 import {
   Table,
@@ -22,7 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 
 import {
   DropdownMenu,
@@ -30,11 +30,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 import {
   Breadcrumb,
@@ -43,30 +43,26 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+} from "@/components/ui/breadcrumb";
 
-import { ArrowUpDown, ChevronDown, MoreVertical } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreVertical } from "lucide-react";
 
 type User = {
-  ID: string
-  username: string
-  email: string
-  role: string
-  team_ID?: string | null
-}
+  ID: string;
+  username: string;
+  email: string;
+  role: string;
+  team_ID?: string | null;
+};
 
 /* ===== COLUMNS ===== */
-const getColumns = (
-  onDelete: (id: string) => void
-): ColumnDef<User>[] => [
+const getColumns = (onDelete: (id: string) => void): ColumnDef<User>[] => [
   {
     accessorKey: "username",
     header: ({ column }) => (
       <Button
         variant="ghost"
-        onClick={() =>
-          column.toggleSorting(column.getIsSorted() === "asc")
-        }
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         Username <ArrowUpDown />
       </Button>
@@ -84,9 +80,7 @@ const getColumns = (
     accessorKey: "team_ID",
     header: "Team ID",
     cell: ({ row }) =>
-      row.original.team_ID
-        ? row.original.team_ID.split("-")[4]
-        : "N/A",
+      row.original.team_ID ? row.original.team_ID.split("-")[4] : "N/A",
   },
   {
     id: "actions",
@@ -102,9 +96,7 @@ const getColumns = (
 
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link to={`/admin/users/edit/${row.original.ID}`}>
-              Edit
-            </Link>
+            <Link to={`/admin/users/create/${row.original.ID}`}>Edit</Link>
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -117,76 +109,67 @@ const getColumns = (
       </DropdownMenu>
     ),
   },
-]
+];
 
 export default function UsersList() {
-  const http = useHttp()
+  const http = useHttp();
 
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] =
-    useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] =
-    useState<VisibilityState>({})
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   /* ===== SOFT DELETE HELPERS ===== */
   const getDeletedUsers = (): string[] =>
-    JSON.parse(localStorage.getItem("deletedUsers") || "[]")
+    JSON.parse(localStorage.getItem("deletedUsers") || "[]");
 
   const saveDeletedUser = (id: string) => {
-    const deleted = getDeletedUsers()
+    const deleted = getDeletedUsers();
     if (!deleted.includes(id)) {
-      localStorage.setItem(
-        "deletedUsers",
-        JSON.stringify([...deleted, id])
-      )
+      localStorage.setItem("deletedUsers", JSON.stringify([...deleted, id]));
     }
-  }
+  };
 
   /* ===== FETCH USERS ===== */
   const fetchUsers = async () => {
     try {
-      const response: any = await http.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Users`
-      )
+      const response = await http.sendRequest(
+        `${import.meta.env.VITE_BACKEND_API_URL}/Users`,
+      );
 
       if (response?.success && Array.isArray(response.data)) {
-        const deletedIds = getDeletedUsers()
-        setUsers(
-          response.data.filter(
-            (u: User) => !deletedIds.includes(u.ID)
-          )
-        )
+        const deletedIds = getDeletedUsers();
+        setUsers(response.data.filter((u: User) => !deletedIds.includes(u.ID)));
       } else {
-        setUsers([])
+        setUsers([]);
       }
     } catch (error) {
-      console.error("Failed to load users", error)
+      console.error("Failed to load users", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    fetchUsers();
+  }, []);
 
   /* ===== DELETE USER ===== */
   const deleteUserHandler = async (id: string) => {
     try {
       await http.sendRequest(
         `${import.meta.env.VITE_BACKEND_API_URL}/Users/${id}`,
-        "DELETE"
-      )
+        "DELETE",
+      );
 
-      saveDeletedUser(id)
-      setUsers((prev) => prev.filter((u) => u.ID !== id))
+      saveDeletedUser(id);
+      setUsers((prev) => prev.filter((u) => u.ID !== id));
     } catch (error) {
-      console.error("Delete failed", error)
+      console.error("Delete failed", error);
     }
-  }
+  };
 
   const table = useReactTable({
     data: users,
@@ -203,9 +186,9 @@ export default function UsersList() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-  })
+  });
 
-  if (loading) return <p className="p-4">Loading users...</p>
+  if (loading) return <p className="p-4">Loading users...</p>;
 
   return (
     <Card>
@@ -239,13 +222,10 @@ export default function UsersList() {
           <Input
             placeholder="Filter username..."
             value={
-              (table.getColumn("username")?.getFilterValue() as string) ??
-              ""
+              (table.getColumn("username")?.getFilterValue() as string) ?? ""
             }
             onChange={(e) =>
-              table
-                .getColumn("username")
-                ?.setFilterValue(e.target.value)
+              table.getColumn("username")?.setFilterValue(e.target.value)
             }
             className="max-w-sm"
           />
@@ -285,7 +265,7 @@ export default function UsersList() {
                   <TableHead key={header.id}>
                     {flexRender(
                       header.column.columnDef.header,
-                      header.getContext()
+                      header.getContext(),
                     )}
                   </TableHead>
                 ))}
@@ -301,7 +281,7 @@ export default function UsersList() {
                     <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}
@@ -318,5 +298,5 @@ export default function UsersList() {
         </Table>
       </CardContent>
     </Card>
-  )
+  );
 }
