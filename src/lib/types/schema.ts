@@ -23,7 +23,7 @@ export const sprintSchema = z.object({
 
 export const testCycleSchema = z
   .object({
-    title: z
+    name: z
       .string()
       .min(2, "Test Cycle title must be at least 2 characters long"),
 

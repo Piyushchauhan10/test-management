@@ -34,8 +34,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
-
-/* ===== SHADCN BREADCRUMB ===== */
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -45,13 +43,9 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 
+
+
 const getColumns = (onDelete: (id: string) => void): ColumnDef<any>[] => [
-  {
-    accessorKey: "ID",
-    header: "ID",
-    cell: ({ row }) =>
-      (row.getValue("ID") as string)?.split("-")?.[4],
-  },
   {
     accessorKey: "name",
     header: ({ column }) => (
@@ -61,9 +55,21 @@ const getColumns = (onDelete: (id: string) => void): ColumnDef<any>[] => [
           column.toggleSorting(column.getIsSorted() === "asc")
         }
       >
-        Name <ArrowUpDown />
+        Name <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
+    cell: ({ row }) => {
+      const projectId = row.original.ID as string
+
+      return (
+        <Link
+          to={`/admin/project/${projectId}/sprints`}
+          className="text-black hover:underline cursor-pointer font-medium"
+        >
+          {row.getValue("name")}
+        </Link>
+      )
+    },
   },
   {
     accessorKey: "description",
@@ -122,14 +128,18 @@ const getColumns = (onDelete: (id: string) => void): ColumnDef<any>[] => [
   },
 ]
 
+
+
 const Project = () => {
   const httpHook = useHttp()
+
   const [projects, setProjects] = React.useState<any[]>([])
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] =
     React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
+
 
   const getProjects = async () => {
     try {
@@ -142,12 +152,14 @@ const Project = () => {
       }
     } catch (error) {
       console.error("Failed to fetch projects:", error)
+      toast.error("Failed to fetch projects")
     }
   }
 
   React.useEffect(() => {
     getProjects()
   }, [])
+
 
   const deleteProjectHandler = async (project_ID: string) => {
     try {
@@ -162,6 +174,7 @@ const Project = () => {
       toast.error("Failed to delete project")
     }
   }
+
 
   const table = useReactTable({
     data: projects,
@@ -183,7 +196,7 @@ const Project = () => {
   return (
     <Card>
       <CardHeader className="space-y-4">
-        {/* ===== FIRST BREADCRUMB ===== */}
+
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -191,16 +204,13 @@ const Project = () => {
                 <Link to="/admin">Home</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
-
             <BreadcrumbSeparator />
-
             <BreadcrumbItem>
               <BreadcrumbPage>Projects</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* ===== HEADER ===== */}
         <div className="flex justify-between items-start">
           <h2 className="text-xl font-semibold">Projects</h2>
 
@@ -211,6 +221,7 @@ const Project = () => {
       </CardHeader>
 
       <CardContent>
+
         <div className="flex items-center py-4">
           <Input
             placeholder="Filter name..."
@@ -226,7 +237,7 @@ const Project = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown />
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
 
@@ -248,6 +259,7 @@ const Project = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
 
         <Table className="text-left">
           <TableHeader>
@@ -281,7 +293,7 @@ const Project = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={6} className="text-center py-6">
                   No results.
                 </TableCell>
               </TableRow>

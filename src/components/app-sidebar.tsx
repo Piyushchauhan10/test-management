@@ -1,5 +1,9 @@
 import * as React from "react"
-import { FolderKanban, Users, UsersRound } from "lucide-react"
+import {
+  Users,
+  UsersRound,
+  FolderTree,
+} from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -14,52 +18,56 @@ import {
 import useHttp from "@/hooks/use-http"
 import { ProjectSwitcher } from "./project-switcher"
 
+const topSection = [
+  {
+    title: "Test Library",
+    url: "/admin/test-library",
+    icon: FolderTree,
+    items: [
+      {
+        title: "Manage Test Library",
+        url: "/admin/test-library",
+      },
+    ],
+  },
+]
+
+const organizationSection = [
+  {
+    title: "Users",
+    url: "/admin/users",
+    icon: Users,
+    items: [
+      {
+        title: "Manage Users",
+        url: "/admin/users",
+      },
+    ],
+  },
+  {
+    title: "Teams",
+    url: "/admin/teams",
+    icon: UsersRound,
+    items: [
+      {
+        title: "Manage Teams",
+        url: "/admin/teams",
+      },
+    ],
+  },
+]
+
 const data = {
   user: {
     name: "shadcn",
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  navMain: [
-    {
-      title: "Projects",
-      url: "/admin/projects",
-      icon: FolderKanban,
-      items: [
-        {
-          title: "Manage Projects",
-          url: "/admin/project",
-        },
-      ],
-    },
-    {
-      title: "Users",
-      url: "/admin/users",
-      icon: Users,
-      items: [
-        {
-          title: "Manage Users",
-          url: "/admin/users",
-        },
-      ],
-    },
-    {
-      title: "Teams",
-      url: "/admin/teams",
-      icon: UsersRound,
-      items: [
-        {
-          title: "Manage Teams",
-          url: "/admin/teams",
-        },
-      ],
-    },
-  ],
 }
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const http = useHttp()
-  const [projects, setProjects] = React.useState<[]>([])
+  const [projects, setProjects] = React.useState<any[]>([])
 
   const getProjects = async () => {
     try {
@@ -86,7 +94,30 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        
+        <NavMain items={topSection} />
+
+      
+        <div
+          style={{
+            height: "1px",
+            background: "#e5e7eb",
+            margin: "10px 12px",
+          }}
+        />
+ 
+        <NavMain items={organizationSection} />
+
+      
+        <div
+          style={{
+            height: "1px",
+            background: "#e5e7eb",
+            margin: "10px 12px",
+          }}
+        />
+
+ 
         <NavProjects />
       </SidebarContent>
 

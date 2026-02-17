@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
@@ -21,77 +21,141 @@ type UserFormProps = {
   userId?: string
 }
 
+type Team = {
+  ID: string
+  name: string
+}
+
 type UserFormData = {
   username: string
   email: string
   role: string
+  team_ID: string
 }
 
 export default function UserForm({ update, userId }: UserFormProps) {
   const navigate = useNavigate()
   const http = useHttp()
 
-  const { register, handleSubmit, setValue } = useForm<UserFormData>({
-    defaultValues: {
-      username: "",
-      email: "",
-      role: "",
-    },
-  })
+  const [teams, setTeams] = useState<Team[]>([])
+  const [loadingTeams, setLoadingTeams] = useState(true)
 
-  /* ===== FETCH USER (EDIT) ===== */
+  const { register, handleSubmit, setValue, watch } =
+    useForm<UserFormData>({
+      defaultValues: {
+        username: "",
+        email: "",
+        role: "",
+        team_ID: "",
+      },
+    })
+
+  const selectedTeam = watch("team_ID")
+
+ 
+  const fetchTeams = async () => {
+    try {
+      const response = await http.sendRequest(
+        `${import.meta.env.VITE_BACKEND_API_URL}/Teams`
+      )
+
+      console.log("🔵 Teams API Raw Response:", response)
+
+      let teamData: Team[] = []
+
+      if (Array.isArray(response?.data)) {
+        teamData = response.data
+      } else if (Array.isArray(response?.data?.value)) {
+        teamData = response.data.value
+      }
+
+      console.log("🟢 Processed Teams Data:", teamData)
+
+      setTeams(teamData)
+    } catch (error) {
+      console.error("❌ Team fetch failed:", error)
+      toast.error("Failed to load teams")
+    } finally {
+      setLoadingTeams(false)
+    }
+  }
+ 
   const fetchUser = async () => {
     try {
       const response = await http.sendRequest(
         `${import.meta.env.VITE_BACKEND_API_URL}/Users/${userId}`
       )
 
-      if (response?.success && response.data) {
-        setValue("username", response.data.username)
-        setValue("email", response.data.email)
-        setValue("role", response.data.role)
+      console.log(response)
+
+      const user = response?.data
+
+      if (user) {
+        console.log(user)
+
+        setValue("username", user.username || "")
+        setValue("email", user.email || "")
+        setValue("role", user.role || "")
+        setValue("team_ID", user.team_ID || "")
       }
     } catch (error) {
-      console.error(error)
+      console.error("❌ Failed to load user:", error)
       toast.error("Failed to load user")
     }
   }
 
   useEffect(() => {
+    fetchTeams()
+
     if (update && userId) {
       fetchUser()
     }
   }, [update, userId])
 
-  /* ===== SUBMIT ===== */
+  
   const onSubmit = async (values: UserFormData) => {
     try {
+      console.log(values)
+
       const url = update
         ? `${import.meta.env.VITE_BACKEND_API_URL}/Users/${userId}`
         : `${import.meta.env.VITE_BACKEND_API_URL}/Users`
 
       const method = update ? "PUT" : "POST"
 
-      await http.sendRequest(url, {
+      const payload = {
+        username: values.username,
+        email: values.email,
+        role: values.role,
+        team_ID: values.team_ID || null,
+      }
+
+      console.log(payload)
+
+      const response = await http.sendRequest(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       })
+
+      console.log(response)
 
       toast.success(
         update ? "User updated successfully" : "User created successfully"
       )
+
       navigate("/admin/users")
     } catch (error) {
-      console.error(error)
-      toast.error(update ? "Failed to update user" : "Failed to create user")
+      console.error("❌ Submit Error:", error)
+      toast.error("Something went wrong")
     }
   }
 
   return (
     <Card className="border-0 shadow-none">
       <CardContent className="pt-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
           <div>
             <Label>Username</Label>
             <Input
@@ -111,9 +175,12 @@ export default function UserForm({ update, userId }: UserFormProps) {
 
           <div>
             <Label>Role</Label>
-            <Select onValueChange={(v) => setValue("role", v)}>
+            <Select
+              value={watch("role")}
+              onValueChange={(v) => setValue("role", v)}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Select role" />
+                <SelectValue placeholder="Select Role" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Admin">Admin</SelectItem>
@@ -124,9 +191,30 @@ export default function UserForm({ update, userId }: UserFormProps) {
             </Select>
           </div>
 
+          <div>
+            <Label>Team</Label>
+            <Select
+              value={selectedTeam}
+              onValueChange={(value) => setValue("team_ID", value)}
+              disabled={loadingTeams}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Team" />
+              </SelectTrigger>
+              <SelectContent>
+                {teams.map((team) => (
+                  <SelectItem key={team.ID} value={team.ID}>
+                    {team.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <Button type="submit" className="w-full">
             {update ? "Update User" : "Add User"}
           </Button>
+
         </form>
       </CardContent>
     </Card>

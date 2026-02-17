@@ -53,18 +53,23 @@ type User = {
   email: string;
   role: string;
   team_ID?: string | null;
+  team?: {
+    ID: string;
+    name: string;
+  };
 };
 
-/* ===== COLUMNS ===== */
 const getColumns = (onDelete: (id: string) => void): ColumnDef<User>[] => [
   {
     accessorKey: "username",
     header: ({ column }) => (
       <Button
         variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        onClick={() =>
+          column.toggleSorting(column.getIsSorted() === "asc")
+        }
       >
-        Username <ArrowUpDown />
+        Username <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
   },
@@ -77,10 +82,9 @@ const getColumns = (onDelete: (id: string) => void): ColumnDef<User>[] => [
     header: "Role",
   },
   {
-    accessorKey: "team_ID",
-    header: "Team ID",
-    cell: ({ row }) =>
-      row.original.team_ID ? row.original.team_ID.split("-")[4] : "N/A",
+    id: "team",
+    header: "Team",
+    accessorFn: (row) => row.team?.name ?? "N/A",
   },
   {
     id: "actions",
@@ -96,7 +100,9 @@ const getColumns = (onDelete: (id: string) => void): ColumnDef<User>[] => [
 
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link to={`/admin/users/create/${row.original.ID}`}>Edit</Link>
+            <Link to={`/admin/users/create/${row.original.ID}`}>
+              Edit
+            </Link>
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -118,33 +124,43 @@ export default function UsersList() {
   const [loading, setLoading] = useState(true);
 
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] =
+    useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] =
+    useState<VisibilityState>({});
 
-  /* ===== SOFT DELETE HELPERS ===== */
   const getDeletedUsers = (): string[] =>
     JSON.parse(localStorage.getItem("deletedUsers") || "[]");
 
   const saveDeletedUser = (id: string) => {
     const deleted = getDeletedUsers();
     if (!deleted.includes(id)) {
-      localStorage.setItem("deletedUsers", JSON.stringify([...deleted, id]));
+      localStorage.setItem(
+        "deletedUsers",
+        JSON.stringify([...deleted, id])
+      );
     }
   };
 
-  /* ===== FETCH USERS ===== */
   const fetchUsers = async () => {
     try {
       const response = await http.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Users`,
+        `${import.meta.env.VITE_BACKEND_API_URL}/Users?$expand=team`
       );
 
-      if (response?.success && Array.isArray(response.data)) {
-        const deletedIds = getDeletedUsers();
-        setUsers(response.data.filter((u: User) => !deletedIds.includes(u.ID)));
-      } else {
-        setUsers([]);
+      let usersData: User[] = [];
+
+      if (Array.isArray(response?.data?.value)) {
+        usersData = response.data.value;
+      } else if (Array.isArray(response?.data)) {
+        usersData = response.data;
       }
+
+      const deletedIds = getDeletedUsers();
+
+      setUsers(
+        usersData.filter((u) => !deletedIds.includes(u.ID))
+      );
     } catch (error) {
       console.error("Failed to load users", error);
     } finally {
@@ -156,16 +172,17 @@ export default function UsersList() {
     fetchUsers();
   }, []);
 
-  /* ===== DELETE USER ===== */
   const deleteUserHandler = async (id: string) => {
     try {
       await http.sendRequest(
         `${import.meta.env.VITE_BACKEND_API_URL}/Users/${id}`,
-        "DELETE",
+        { method: "DELETE" }
       );
 
       saveDeletedUser(id);
-      setUsers((prev) => prev.filter((u) => u.ID !== id));
+      setUsers((prev) =>
+        prev.filter((u) => u.ID !== id)
+      );
     } catch (error) {
       console.error("Delete failed", error);
     }
@@ -188,7 +205,8 @@ export default function UsersList() {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  if (loading) return <p className="p-4">Loading users...</p>;
+  if (loading)
+    return <p className="p-4">Loading users...</p>;
 
   return (
     <Card>
@@ -208,32 +226,43 @@ export default function UsersList() {
         </Breadcrumb>
 
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Users</h2>
+          <h2 className="text-xl font-semibold">
+            Users
+          </h2>
 
           <Button asChild>
-            <Link to="/admin/users/create">Add User</Link>
+            <Link to="/admin/users/create">
+              Add User
+            </Link>
           </Button>
         </div>
       </CardHeader>
 
       <CardContent>
-        {/* FILTER + COLUMNS */}
-        <div className="flex items-center py-4">
+
+        
+        <div className="flex items-center py-4 gap-4">
           <Input
             placeholder="Filter username..."
             value={
-              (table.getColumn("username")?.getFilterValue() as string) ?? ""
+              (table.getColumn("username")?.getFilterValue() as string) ??
+              ""
             }
             onChange={(e) =>
-              table.getColumn("username")?.setFilterValue(e.target.value)
+              table
+                .getColumn("username")
+                ?.setFilterValue(e.target.value)
             }
             className="max-w-sm"
           />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown />
+              <Button
+                variant="outline"
+                className="ml-auto"
+              >
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
 
@@ -256,16 +285,19 @@ export default function UsersList() {
           </DropdownMenu>
         </div>
 
-        {/* TABLE */}
-        <Table>
+          
+        <Table className="text-left">
           <TableHeader>
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id}>
                 {group.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    className="text-left"
+                  >
                     {flexRender(
                       header.column.columnDef.header,
-                      header.getContext(),
+                      header.getContext()
                     )}
                   </TableHead>
                 ))}
@@ -273,23 +305,32 @@ export default function UsersList() {
             ))}
           </TableHeader>
 
-          <TableBody className="text-left">
+          <TableBody
+           className="text-left" >
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
+                  {row
+                    .getVisibleCells()
+                    .map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="text-left align-middle"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell
+                  colSpan={5}
+                  className="text-center"
+                >
                   No results.
                 </TableCell>
               </TableRow>

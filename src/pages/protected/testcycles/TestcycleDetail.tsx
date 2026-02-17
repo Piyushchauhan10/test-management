@@ -1,4 +1,25 @@
-import * as React from "react"
+import { useEffect, useState } from "react"
+import { Link, useParams } from "react-router-dom"
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
+import { Button } from "@/components/ui/button"
+import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+
 import {
   flexRender,
   getCoreRowModel,
@@ -11,29 +32,15 @@ import {
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Link, useParams } from "react-router-dom"
-import useHttp from "@/hooks/use-http"
+
 import { format } from "date-fns"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import useHttp from "@/hooks/use-http"
 import { toast } from "sonner"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { DropdownMenuCheckboxItem } from "@radix-ui/react-dropdown-menu"
+
+ 
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -43,11 +50,18 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 
+type TestCycle = {
+  ID: string
+  Name: string
+  startDate: string
+  endDate: string
+  project_ID: string
+  sprint_ID: string
+}
  
 const getColumns = (
-  projectId: string,
   onDelete: (id: string) => void
-): ColumnDef<any>[] => [
+): ColumnDef<TestCycle>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => (
@@ -57,35 +71,27 @@ const getColumns = (
           column.toggleSorting(column.getIsSorted() === "asc")
         }
       >
-        Name <ArrowUpDown className="ml-2 h-4 w-4" />
+        Name <ArrowUpDown />
       </Button>
     ),
-    cell: ({ row }) => {
-      const sprint_ID = row.original.ID as string
-
-      return (
-        <Link
-          to={`/admin/project/${projectId}/sprint/${sprint_ID}`}
-          className="text-black hover:underline cursor-pointer font-medium"
-        >
-          {row.getValue("name")}
-        </Link>
-      )
-    },
   },
-  { accessorKey: "startDate", header: "Start Date" },
-  { accessorKey: "endDate", header: "End Date" },
   {
-    accessorKey: "createdAt",
-    header: "Created At",
+    accessorKey: "startDate",
+    header: "Start Date",
     cell: ({ row }) =>
-      format(new Date(row.getValue("createdAt")), "PPP"),
+      format(new Date(row.getValue("startDate")), "PPP"),
+  },
+  {
+    accessorKey: "endDate",
+    header: "End Date",
+    cell: ({ row }) =>
+      format(new Date(row.getValue("endDate")), "PPP"),
   },
   {
     id: "actions",
     header: "Action",
     cell: ({ row }) => {
-      const sprint_ID = row.original.ID as string
+      const id = row.original.ID
 
       return (
         <DropdownMenu>
@@ -98,15 +104,7 @@ const getColumns = (
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
               <Link
-                to={`/admin/project/${projectId}/sprint/${sprint_ID}/test-cycle`}
-              >
-                View Test Cycles
-              </Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem asChild>
-              <Link
-                to={`/admin/project/${projectId}/sprint/${sprint_ID}/edit`}
+                to={`/admin/project/${row.original.project_ID}/sprint/${row.original.sprint_ID}/test-cycles/${id}/edit`}
               >
                 Edit
               </Link>
@@ -115,7 +113,7 @@ const getColumns = (
             <DropdownMenuItem
               onSelect={(e) => {
                 e.preventDefault()
-                onDelete(sprint_ID)
+                onDelete(id)
               }}
               className="text-red-600 cursor-pointer"
             >
@@ -128,75 +126,74 @@ const getColumns = (
   },
 ]
 
- 
+const TestCyclesDetail = () => {
+  const { projectId, sprintId } = useParams<{
+    projectId: string
+    sprintId: string
+  }>()
 
-export default function ProjectDetail() {
-  const { id } = useParams<{ id: string }>()
-  const httpHook = useHttp()
+  const http = useHttp()
 
-  const [sprints, setSprints] = React.useState<any[]>([])
-  const [projectName, setProjectName] = React.useState<string>("")
+  const [testCycles, setTestCycles] = useState<TestCycle[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [projectName, setProjectName] = useState("")
+  const [sprintName, setSprintName] = useState("")
+
+  const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] =
-    React.useState<ColumnFiltersState>([])
+    useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+    useState<VisibilityState>({})
 
-  /* Fetch Project Details */
-  const getProjectDetails = async () => {
+   
+  const getProjectName = async () => {
+    const res = await http.sendRequest(
+      `${import.meta.env.VITE_BACKEND_API_URL}/Projects('${projectId}')`
+    )
+    if (res?.success) setProjectName(res.data.name)
+  }
+ 
+  const getSprintName = async () => {
+    const res = await http.sendRequest(
+      `${import.meta.env.VITE_BACKEND_API_URL}/Sprints('${sprintId}')`
+    )
+    if (res?.success) setSprintName(res.data.name)
+  }
+ 
+  const getTestCycles = async () => {
+    setLoading(true)
     try {
-      const response = await httpHook.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Projects('${id}')`
+      const res = await http.sendRequest(
+        `${import.meta.env.VITE_BACKEND_API_URL}/TestCycles?$filter=project_ID eq '${projectId}' and sprint_ID eq '${sprintId}'`
       )
 
-      if (response?.success) {
-        setProjectName(response.data.name)
+      if (res?.success) {
+        setTestCycles(res.data)
       }
-    } catch (error) {
-      console.error("Failed to fetch project details", error)
+    } catch (err) {
+      console.error("Fetch failed", err)
+    } finally {
+      setLoading(false)
     }
   }
 
- 
-  const getSprintById = async () => {
+  const deleteHandler = async (id: string) => {
     try {
-      const response = await httpHook.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Sprints?$filter=project_ID eq '${id}'`
-      )
-
-      if (response?.success) {
-        setSprints(response.data)
-      }
-    } catch (error) {
-      console.error("Failed to fetch sprints:", error)
-    }
-  }
-
-  React.useEffect(() => {
-    if (id) {
-      getSprintById()
-      getProjectDetails()
-    }
-  }, [id])
- 
-  const deleteSprintHandler = async (sprint_ID: string) => {
-    try {
-      await httpHook.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Sprints('${sprint_ID}')`,
+      await http.sendRequest(
+        `${import.meta.env.VITE_BACKEND_API_URL}/TestCycles('${id}')`,
         { method: "DELETE" }
       )
-
-      toast.success("Sprint deleted successfully")
-      await getSprintById()
+      toast.success("Test Cycle deleted")
+      getTestCycles()
     } catch {
-      toast.error("Failed to delete sprint")
+      toast.error("Delete failed")
     }
   }
 
   const table = useReactTable({
-    data: sprints,
-    columns: getColumns(id!, deleteSprintHandler),
+    data: testCycles,
+    columns: getColumns(deleteHandler),
     state: {
       sorting,
       columnFilters,
@@ -206,15 +203,25 @@ export default function ProjectDetail() {
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   })
+
+  useEffect(() => {
+    if (projectId && sprintId) {
+      getProjectName()
+      getSprintName()
+      getTestCycles()
+    }
+  }, [projectId, sprintId])
+
+  if (loading) return <p className="p-4">Loading...</p>
 
   return (
     <Card>
       <CardHeader className="space-y-4">
-
+    
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -234,32 +241,47 @@ export default function ProjectDetail() {
             <BreadcrumbSeparator />
 
             <BreadcrumbItem>
-              <BreadcrumbPage>Sprints</BreadcrumbPage>
+              <BreadcrumbLink asChild>
+                <Link to={`/admin/project/${projectId}/sprints`}>
+                  {projectName}
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+
+            <BreadcrumbSeparator />
+
+            <BreadcrumbItem>
+              <BreadcrumbPage>
+                {sprintName} {">"} Test Cycles
+              </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
 
-        <div className="flex justify-between items-start">
-          <h2 className="text-xl font-semibold">
-            {projectName}
-          </h2>
+ 
+        <div className="flex justify-between">
+          <h2 className="text-xl font-semibold">Test Cycles</h2>
 
           <div className="space-x-2">
             <Button asChild>
-              <Link to={`/admin/project/${id}/sprint/create`}>
-                Create Sprint
+              <Link
+                to={`/admin/project/${projectId}/sprint/${sprintId}/test-cycles/create`}
+              >
+                Create Test Cycle
               </Link>
             </Button>
 
             <Button variant="outline" asChild>
-              <Link to={`/admin/project`}>Back</Link>
+              <Link to={`/admin/project/${projectId}/sprints`}>
+                Back
+              </Link>
             </Button>
           </div>
         </div>
       </CardHeader>
 
       <CardContent>
-        <div className="flex items-center py-4">
+        <div className="flex py-4">
           <Input
             placeholder="Filter name..."
             value={
@@ -274,20 +296,20 @@ export default function ProjectDetail() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
+                Columns <ChevronDown />
               </Button>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end">
               {table
                 .getAllColumns()
-                .filter((column) => column.getCanHide())
+                .filter((c) => c.getCanHide())
                 .map((column) => (
                   <DropdownMenuCheckboxItem
                     key={column.id}
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
+                    onCheckedChange={(v) =>
+                      column.toggleVisibility(!!v)
                     }
                   >
                     {column.id}
@@ -297,15 +319,15 @@ export default function ProjectDetail() {
           </DropdownMenu>
         </div>
 
-        <Table className="text-left">
+        <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((group) => (
-              <TableRow key={group.id}>
-                {group.headers.map((header) => (
-                  <TableHead key={header.id}>
+            {table.getHeaderGroups().map((hg) => (
+              <TableRow key={hg.id}>
+                {hg.headers.map((h) => (
+                  <TableHead key={h.id}>
                     {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
+                      h.column.columnDef.header,
+                      h.getContext()
                     )}
                   </TableHead>
                 ))}
@@ -316,9 +338,9 @@ export default function ProjectDetail() {
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="text-left">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -329,7 +351,7 @@ export default function ProjectDetail() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6">
+                <TableCell colSpan={5} className="text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -340,3 +362,5 @@ export default function ProjectDetail() {
     </Card>
   )
 }
+
+export default TestCyclesDetail

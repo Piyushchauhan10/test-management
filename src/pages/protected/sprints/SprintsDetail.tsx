@@ -36,7 +36,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { DropdownMenuCheckboxItem } from "@radix-ui/react-dropdown-menu"
 
-/* ===== SHADCN BREADCRUMB ===== */
+ 
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/breadcrumb"
 
 type TestCycle = {
-  title: string
+  name: string
   startDate: string
   endDate: string
   status: string
@@ -56,16 +56,16 @@ type TestCycle = {
   ID: string
 }
 
-/* ===== TABLE COLUMNS ===== */
+ 
 const getColumns = (onDelete: (id: string) => void): ColumnDef<any>[] => [
+  // {
+  //   accessorKey: "ID",
+  //   header: "ID",
+  //   cell: ({ row }) =>
+  //     (row.getValue("ID") as string)?.split("-")?.[4],
+  // },
   {
-    accessorKey: "ID",
-    header: "ID",
-    cell: ({ row }) =>
-      (row.getValue("ID") as string)?.split("-")?.[4],
-  },
-  {
-    accessorKey: "title",
+    accessorKey: "name",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -73,7 +73,7 @@ const getColumns = (onDelete: (id: string) => void): ColumnDef<any>[] => [
           column.toggleSorting(column.getIsSorted() === "asc")
         }
       >
-        Title <ArrowUpDown />
+        Name <ArrowUpDown />
       </Button>
     ),
   },
@@ -146,7 +146,7 @@ export default function SprintsDetail() {
   const [columnVisibility, setColumnVisibility] =
     useState<VisibilityState>({})
 
-  /* ===== FETCH PROJECT NAME (FIXED) ===== */
+   
   const getProjectName = async () => {
     try {
       const res = await httpHook.sendRequest(
@@ -161,7 +161,7 @@ export default function SprintsDetail() {
     }
   }
 
-  /* ===== FETCH SPRINT NAME (FIXED) ===== */
+ 
   const getSprintName = async () => {
     try {
       const res = await httpHook.sendRequest(
@@ -176,7 +176,7 @@ export default function SprintsDetail() {
     }
   }
 
-  /* ===== FETCH TEST CYCLES ===== */
+  
   const getTestCycles = async () => {
     try {
       const response = await httpHook.sendRequest(
@@ -236,7 +236,7 @@ export default function SprintsDetail() {
   return (
     <Card>
       <CardHeader className="space-y-4">
-        {/* ===== BREADCRUMB ===== */}
+         
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -281,14 +281,14 @@ export default function SprintsDetail() {
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* ===== HEADER ===== */}
+     
         <div className="flex justify-between items-start">
           <h2 className="text-xl font-semibold">Test Cycles</h2>
 
           <div className="space-x-2">
             <Button asChild>
               <Link
-                to={`/admin/test-cycles/create/${projectId}/${sprintId}`}
+               to={`/admin/project/${projectId}/sprint/${sprintId}/test-cycles/create`}
               >
                 Create Test Cycles
               </Link>
@@ -306,13 +306,13 @@ export default function SprintsDetail() {
       <CardContent>
         <div className="flex items-center py-4">
           <Input
-            placeholder="Filter title..."
+            placeholder="Filter name..."
             value={
-              (table.getColumn("title")?.getFilterValue() as string) ??
+              (table.getColumn("name")?.getFilterValue() as string) ??
               ""
             }
             onChange={(e) =>
-              table.getColumn("title")?.setFilterValue(e.target.value)
+              table.getColumn("name")?.setFilterValue(e.target.value)
             }
             className="max-w-sm"
           />
