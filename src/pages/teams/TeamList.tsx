@@ -53,7 +53,7 @@ type Team = {
   description?: string
 }
 
-/* ===== COLUMNS ===== */
+ 
 const getColumns = (onDelete: (id: string) => void): ColumnDef<Team>[] => [
   {
     accessorKey: "name",
@@ -113,7 +113,7 @@ export default function TeamsList() {
   const [columnVisibility, setColumnVisibility] =
     useState<VisibilityState>({})
 
-  /* ===== SOFT DELETE HELPERS ===== */
+  
   const getDeletedTeams = (): string[] =>
     JSON.parse(localStorage.getItem("deletedTeams") || "[]")
 
@@ -127,7 +127,7 @@ export default function TeamsList() {
     }
   }
 
-  /* ===== FETCH TEAMS ===== */
+ 
   const fetchTeams = async () => {
     try {
       const response = await http.sendRequest(
@@ -154,8 +154,7 @@ export default function TeamsList() {
   useEffect(() => {
     fetchTeams()
   }, [])
-
-  /* ===== DELETE TEAM ===== */
+ 
   const deleteTeamHandler = async (id: string) => {
     try {
       await http.sendRequest(

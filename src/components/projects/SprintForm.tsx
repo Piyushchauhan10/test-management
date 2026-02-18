@@ -81,7 +81,7 @@ const SprintForm = ({
             Accept: "application/json",
           },
           body: JSON.stringify({
-            name: values.name, // ✅ DO NOT send ID
+            name: values.name,  
             startDate: moment(values.startDate).format("YYYY-MM-DD"),
             endDate: moment(values.endDate).format("YYYY-MM-DD"),
             project_ID: projectId
@@ -110,7 +110,7 @@ const SprintForm = ({
             </h1>
           </div>
 
-          {/* NAME */}
+           
           <FormField
             control={form.control}
             name="name"
@@ -129,7 +129,7 @@ const SprintForm = ({
             )}
           />
 
-          {/* START DATE */}
+          
           <FormField
             control={form.control}
             name="startDate"
@@ -168,7 +168,7 @@ const SprintForm = ({
             )}
           />
 
-          {/* END DATE */}
+           
           <FormField
             control={form.control}
             name="endDate"

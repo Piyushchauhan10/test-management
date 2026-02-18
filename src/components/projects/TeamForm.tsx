@@ -30,7 +30,7 @@ export default function TeamForm({ update, teamId }: TeamFormProps) {
     },
   })
 
-  /* ===== FETCH TEAM FOR EDIT ===== */
+   
   const fetchTeam = async () => {
     try {
       const response = await http.sendRequest(
@@ -52,8 +52,7 @@ export default function TeamForm({ update, teamId }: TeamFormProps) {
       fetchTeam()
     }
   }, [update, teamId])
-
-  /* ===== SUBMIT ===== */
+ 
   const onSubmit = async (values: TeamFormData) => {
     try {
       const url = update

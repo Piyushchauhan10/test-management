@@ -33,16 +33,14 @@ const EditSprint = () => {
       setLoading(false)
     }
   }
-
-  /* ===================== EFFECT ===================== */
+ 
 
   useEffect(() => {
     if (sprintId) {
       getSprintById(sprintId)
     }
   }, [sprintId])
-
-  /* ===================== UI ===================== */
+ 
 
   return (
     <Card>
