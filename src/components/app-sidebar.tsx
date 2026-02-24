@@ -3,6 +3,7 @@ import {
   Users,
   UsersRound,
   FolderTree,
+  ClipboardList,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -55,7 +56,19 @@ const organizationSection = [
       },
     ],
   },
+  {
+    title: "Requirements",
+    url: "/admin/requirements",
+    icon: ClipboardList,
+    items: [
+      {
+        title: "Manage Requirements",
+        url: "/admin/requirements",
+      },
+    ],
+  },
 ]
+
 
 const data = {
   user: {
@@ -94,10 +107,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        
+
+     
         <NavMain items={topSection} />
 
-      
         <div
           style={{
             height: "1px",
@@ -105,10 +118,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             margin: "10px 12px",
           }}
         />
- 
+
+        
         <NavMain items={organizationSection} />
 
-      
         <div
           style={{
             height: "1px",
@@ -117,6 +130,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           }}
         />
 
+    
  
         <NavProjects />
       </SidebarContent>

@@ -40,3 +40,6 @@
 .read-the-docs {
   color: #888;
 }
+.folder-row:hover .folder-actions {
+  opacity: 1;
+}

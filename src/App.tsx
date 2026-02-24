@@ -32,12 +32,15 @@ import {
 
 import { useGlobalError } from "@/Context/ErrorContext"
 import TestLibrary from "./pages/protected/test-library/TestLibrary"
+import RequirementsList from "./pages/requirements/requirements"
+import CreateRequirement from "./pages/requirements/RequirementAddUpdate"
+
 
 function App() {
   const location = useLocation()
   const { error, setError } = useGlobalError()
 
- 
+
   useEffect(() => {
     setError(null)
     localStorage.setItem("previous_url", location.pathname)
@@ -51,13 +54,13 @@ function App() {
       children: [
         { path: "dashboard", element: <Dashboard /> },
 
-       
+
         { path: "project", element: <Project /> },
         { path: "project/create", element: <AddUpdatePage /> },
         { path: "project/edit/:id", element: <AddUpdatePage /> },
         { path: "project/:id/sprints", element: <ProjectDetail /> },
 
-     
+
         {
           path: "project/:projectId/sprint/create",
           element: <CreateSprint />,
@@ -71,7 +74,7 @@ function App() {
           element: <EditSprint />,
         },
 
-       
+
         {
           path: "project/:projectId/sprint/:sprintId/test-cycles",
           element: <TestCyclesDetail />,
@@ -86,29 +89,31 @@ function App() {
           element: <EditTestCycle />,
         },
 
-        
+
         { path: "users", element: <UsersList /> },
         { path: "users/create", element: <CreateUser /> },
         { path: "users/create/:id", element: <CreateUser /> },
 
-     
+        {path: "/admin/requirements", element: <RequirementsList />},
+        {path: "/admin/requirements/create", element: < CreateRequirement />},
+
         { path: "teams", element: <TeamList /> },
         { path: "teams/create", element: <CreateTeam /> },
         { path: "teams/create/:id", element: <CreateTeam /> },
-         { path: "test-library", element: <TestLibrary /> },
+        { path: "test-library", element: <TestLibrary /> },
       ],
     },
   ])
 
   return (
     <>
-      
+
       {error && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="w-full max-w-lg px-4">
             <div className="relative rounded-xl border border-red-200 bg-white shadow-2xl">
 
-  
+
               <div className="flex items-center gap-3 rounded-t-xl bg-red-50 px-5 py-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
                   ❗
@@ -118,14 +123,14 @@ function App() {
                 </h2>
               </div>
 
-    
+
               <div className="px-5 py-4">
                 <p className="text-sm leading-relaxed text-gray-700">
                   {error}
                 </p>
               </div>
 
- 
+
               <div className="flex justify-end gap-3 rounded-b-xl bg-gray-50 px-5 py-3">
                 <button
                   onClick={() => setError(null)}
@@ -135,7 +140,7 @@ function App() {
                 </button>
               </div>
 
-       
+
               <button
                 onClick={() => setError(null)}
                 className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"

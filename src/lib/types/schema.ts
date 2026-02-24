@@ -46,3 +46,29 @@ export const testCycleSchema = z
       path: ["endDate"],
     }
   )
+
+export const requirementSchema = z.object({
+  title: z
+    .string()
+    .min(2, "Title must be at least 2 characters")
+    .max(100, "Title cannot exceed 100 characters"),
+
+  description: z
+    .string()
+    .min(5, "Description must be at least 5 characters")
+    .max(500, "Description cannot exceed 500 characters"),
+
+  priority: z.enum(["High", "Medium", "Low"]),
+
+  status: z.enum(["Draft", "Approved", "Rejected"]),
+
+  project_ID: z
+    .string()
+    .min(1, "Project selection is required"),
+
+  sprint_ID: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val === "" ? null : val)),
+});

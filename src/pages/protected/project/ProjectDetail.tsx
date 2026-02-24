@@ -98,7 +98,7 @@ const getColumns = (
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
               <Link
-                to={`/admin/project/${projectId}/sprint/${sprint_ID}/test-cycle`}
+                to={`/admin/project/${projectId}/sprint/${sprint_ID}`}
               >
                 View Test Cycles
               </Link>
