@@ -151,35 +151,54 @@ export default function UserForm({ update, userId }: UserFormProps) {
     }
   }
 
-  return (
-    <Card className="border-0 shadow-none">
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+ return (
+  <Card className="bg-background shadow-none border-0">
+    <CardContent className="p-8">
 
-          <div>
-            <Label>Username</Label>
+ 
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          {update ? "Update User" : "Create New User"}
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Fill in the user details below.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+
+       
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+         
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Username</Label>
             <Input
               {...register("username", { required: true })}
               placeholder="Enter username"
+              className="h-11 w-full"
             />
           </div>
 
-          <div>
-            <Label>Email</Label>
+      
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Email</Label>
             <Input
               type="email"
               {...register("email", { required: true })}
-              placeholder="Enter email"
+              placeholder="Enter email address"
+              className="h-11 w-full"
             />
           </div>
 
-          <div>
-            <Label>Role</Label>
+     
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Role</Label>
             <Select
               value={watch("role")}
               onValueChange={(v) => setValue("role", v)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-11 w-full">
                 <SelectValue placeholder="Select Role" />
               </SelectTrigger>
               <SelectContent>
@@ -191,14 +210,15 @@ export default function UserForm({ update, userId }: UserFormProps) {
             </Select>
           </div>
 
-          <div>
-            <Label>Team</Label>
+    
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Team</Label>
             <Select
               value={selectedTeam}
               onValueChange={(value) => setValue("team_ID", value)}
               disabled={loadingTeams}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-11 w-full">
                 <SelectValue placeholder="Select Team" />
               </SelectTrigger>
               <SelectContent>
@@ -211,12 +231,20 @@ export default function UserForm({ update, userId }: UserFormProps) {
             </Select>
           </div>
 
-          <Button type="submit" className="w-full">
-            {update ? "Update User" : "Add User"}
-          </Button>
+        </div>
 
-        </form>
-      </CardContent>
-    </Card>
-  )
+    
+        <div className="flex justify-end pt-2">
+          <Button
+            type="submit"
+            className="h-11 px-8 text-sm font-medium"
+          >
+            {update ? "Update User" : "Create User"}
+          </Button>
+        </div>
+
+      </form>
+    </CardContent>
+  </Card>
+)
 }

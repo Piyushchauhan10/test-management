@@ -34,6 +34,7 @@ import { useGlobalError } from "@/Context/ErrorContext"
 import TestLibrary from "./pages/protected/test-library/TestLibrary"
 import RequirementsList from "./pages/requirements/requirements"
 import CreateRequirement from "./pages/requirements/RequirementAddUpdate"
+import TestLibraryLayout from "./pages/protected/test-library/TestLibrary"
 
 
 function App() {
@@ -94,13 +95,15 @@ function App() {
         { path: "users/create", element: <CreateUser /> },
         { path: "users/create/:id", element: <CreateUser /> },
 
-        {path: "/admin/requirements", element: <RequirementsList />},
-        {path: "/admin/requirements/create", element: < CreateRequirement />},
+        { path: "requirements", element: <RequirementsList /> },
+        { path: "requirements/create", element: < CreateRequirement /> },
 
         { path: "teams", element: <TeamList /> },
         { path: "teams/create", element: <CreateTeam /> },
         { path: "teams/create/:id", element: <CreateTeam /> },
         { path: "test-library", element: <TestLibrary /> },
+      
+
       ],
     },
   ])
