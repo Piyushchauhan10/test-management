@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import useHttp from "@/hooks/use-http";
+import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
+import useHttp from "@/hooks/use-http"
 
 import {
   flexRender,
@@ -13,7 +13,7 @@ import {
   type SortingState,
   type ColumnFiltersState,
   type VisibilityState,
-} from "@tanstack/react-table";
+} from "@tanstack/react-table"
 
 import {
   Table,
@@ -22,7 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
 
 import {
   DropdownMenu,
@@ -30,11 +30,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 
 import {
   Breadcrumb,
@@ -43,44 +43,22 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@/components/ui/breadcrumb"
 
-import { ArrowUpDown, ChevronDown, MoreVertical } from "lucide-react";
+import { ArrowUpDown, ChevronDown, MoreVertical } from "lucide-react"
 
- 
 type Requirement = {
-  ID: string;
-  title: string;
-  description: string;
-  priority: string;
-  status: string;
-  project_ID: string;
-  sprint_ID?: string | null;
-  project?: {
-    ID: string;
-    name: string;
-  };
-  sprint?: {
-    ID: string;
-    name: string;
-  };
-};
+  ID: string
+  title: string
+  description: string
+  priority: string
+  status: string
+  project_ID: string
+  sprint_ID?: string | null
+  project?: { ID: string; name: string }
+  sprint?: { ID: string; name: string }
+}
 
- 
-const getStatusStyle = (status: string) => {
-  switch (status) {
-    case "Approved":
-      return "bg-green-100 text-green-700";
-    case "Draft":
-      return "bg-gray-100 text-gray-700";
-    case "Rejected":
-      return "bg-red-100 text-red-700";
-    default:
-      return "bg-blue-100 text-blue-700";
-  }
-};
-
- 
 const getColumns = (
   onDelete: (id: string) => void
 ): ColumnDef<Requirement>[] => [
@@ -105,15 +83,6 @@ const getColumns = (
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => (
-      <span
-        className={`px-2 py-1 rounded text-sm font-medium ${getStatusStyle(
-          row.original.status
-        )}`}
-      >
-        {row.original.status}
-      </span>
-    ),
   },
   {
     id: "project",
@@ -139,7 +108,7 @@ const getColumns = (
 
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link to={`/admin/requirements/create/${row.original.ID}`}>
+            <Link to={`/admin/requirements/${row.original.ID}/edit`}>
               Edit
             </Link>
           </DropdownMenuItem>
@@ -154,68 +123,62 @@ const getColumns = (
       </DropdownMenu>
     ),
   },
-];
+]
 
- 
 export default function RequirementsList() {
-  const http = useHttp();
+  const http = useHttp()
 
-  const [requirements, setRequirements] = useState<Requirement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [requirements, setRequirements] = useState<Requirement[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] =
-    useState<ColumnFiltersState>([]);
+    useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] =
-    useState<VisibilityState>({});
+    useState<VisibilityState>({})
 
- 
   const fetchRequirements = async () => {
     try {
-      const response = await http.sendRequest(
+      const res = await http.sendRequest(
         `${import.meta.env.VITE_BACKEND_API_URL}/Requirements?$expand=project,sprint`
-      );
+      )
 
       const data =
-        response?.data?.value ||
-        response?.data ||
-        [];
+        res?.data?.value ||
+        res?.data ||
+        []
 
-      setRequirements(data);
+      setRequirements(data)
     } catch (error) {
-      console.error("Failed to load requirements", error);
+      console.error("Failed to load requirements", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchRequirements();
-  }, []);
- 
+    fetchRequirements()
+  }, [])
+
   const deleteHandler = async (id: string) => {
     try {
       await http.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Requirements(${id})`,
+        `${import.meta.env.VITE_BACKEND_API_URL}/Requirements('${id}')`,
         { method: "DELETE" }
-      );
+      )
 
       setRequirements((prev) =>
         prev.filter((r) => r.ID !== id)
-      );
+      )
     } catch (error) {
-      console.error("Delete failed", error);
+      console.error("Delete failed", error)
     }
-  };
- 
+  }
+
   const table = useReactTable({
     data: requirements,
     columns: getColumns(deleteHandler),
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
+    state: { sorting, columnFilters, columnVisibility },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -223,11 +186,10 @@ export default function RequirementsList() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-  });
+  })
 
-  if (loading)
-    return <p className="p-4">Loading requirements...</p>;
- 
+  if (loading) return <p className="p-4">Loading...</p>
+
   return (
     <Card>
       <CardHeader className="space-y-4">
@@ -238,9 +200,13 @@ export default function RequirementsList() {
                 <Link to="/admin">Home</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
+
             <BreadcrumbSeparator />
+
             <BreadcrumbItem>
-              <BreadcrumbPage>Requirements</BreadcrumbPage>
+              <BreadcrumbPage>
+                Requirements
+              </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -259,12 +225,14 @@ export default function RequirementsList() {
       </CardHeader>
 
       <CardContent>
+ 
         <div className="flex items-center py-4 gap-4">
           <Input
             placeholder="Filter title..."
             value={
-              (table.getColumn("title")?.getFilterValue() as string) ??
-              ""
+              (table
+                .getColumn("title")
+                ?.getFilterValue() as string) ?? ""
             }
             onChange={(e) =>
               table
@@ -276,21 +244,29 @@ export default function RequirementsList() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              <Button
+                variant="outline"
+                className="ml-auto"
+              >
+                Columns{" "}
+                <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end">
               {table
                 .getAllColumns()
-                .filter((column) => column.getCanHide())
+                .filter((column) =>
+                  column.getCanHide()
+                )
                 .map((column) => (
                   <DropdownMenuCheckboxItem
                     key={column.id}
                     checked={column.getIsVisible()}
                     onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
+                      column.toggleVisibility(
+                        !!value
+                      )
                     }
                   >
                     {column.id}
@@ -299,43 +275,57 @@ export default function RequirementsList() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
+ 
         <Table className="text-left">
           <TableHeader>
-            {table.getHeaderGroups().map((group) => (
-              <TableRow key={group.id}>
-                {group.headers.map((header) => (
-                  <TableHead key={header.id} className="text-left">
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
+            {table
+              .getHeaderGroups()
+              .map((group) => (
+                <TableRow key={group.id}>
+                  {group.headers.map(
+                    (header) => (
+                      <TableHead
+                        key={header.id}
+                      >
+                        {flexRender(
+                          header.column
+                            .columnDef.header,
+                          header.getContext()
+                        )}
+                      </TableHead>
+                    )
+                  )}
+                </TableRow>
+              ))}
           </TableHeader>
 
-          <TableBody className="text-left">
+          <TableBody>
             {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="text-left align-middle"
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table
+                .getRowModel()
+                .rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row
+                      .getVisibleCells()
+                      .map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                        >
+                          {flexRender(
+                            cell.column
+                              .columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                  </TableRow>
+                ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-left">
+                <TableCell
+                  colSpan={6}
+                  className="text-center"
+                >
                   No results.
                 </TableCell>
               </TableRow>
@@ -344,5 +334,5 @@ export default function RequirementsList() {
         </Table>
       </CardContent>
     </Card>
-  );
+  )
 }

@@ -1,231 +1,163 @@
-import { useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
-import { useNavigate } from "react-router-dom"
-import { toast } from "sonner"
-import useHttp from "@/hooks/use-http"
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import useHttp from "@/hooks/use-http";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 
-type RequirementFormProps = {
-  update: boolean
-  requirementId?: string
-}
+type Requirement = {
+  ID: string;
+  title: string;
+  description: string;
+  priority: string;
+  status: string;
+  project_ID: string;
+  sprint_ID?: string | null;
+};
 
 type Project = {
-  ID: string
-  name: string
-}
+  ID: string;
+  name: string;
+};
 
 type Sprint = {
-  ID: string
-  name: string
-}
+  ID: string;
+  name: string;
+};
 
-type RequirementFormData = {
-  title: string
-  description: string
-  priority: string
-  status: string
-  project_ID: string
-  sprint_ID: string
-}
+type Props = {
+  update: boolean;
+  data?: Requirement | null;
+};
 
-const BASE_URL =
-  "http://72.61.244.79:4004/odata/v4/test-management"
+type FormData = {
+  title: string;
+  description: string;
+  priority: string;
+  status: string;
+  project_ID: string;
+  sprint_ID: string;
+};
 
-export default function RequirementForm({
-  update,
-  requirementId,
-}: RequirementFormProps) {
-  const navigate = useNavigate()
-  const http = useHttp()
+export default function RequirementForm({ update, data }: Props) {
+  const navigate = useNavigate();
+  const http = useHttp();
 
-  const [projects, setProjects] = useState<Project[]>([])
-  const [sprints, setSprints] = useState<Sprint[]>([])
-  const [loadingProjects, setLoadingProjects] = useState(true)
-  const [loadingSprints, setLoadingSprints] = useState(false)
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
 
-  const { register, handleSubmit, setValue, watch } =
-    useForm<RequirementFormData>({
-      defaultValues: {
-        title: "",
-        description: "",
-        priority: "",
-        status: "",
-        project_ID: "",
-        sprint_ID: "",
-      },
-    })
+  const { register, handleSubmit, setValue, watch } = useForm<FormData>();
 
-  const selectedProject = watch("project_ID")
-
+  const selectedProject = watch("project_ID");
 
   const fetchProjects = async () => {
     try {
-      const response = await http.sendRequest(
-        `${BASE_URL}/Projects`
-      )
+      const res = await http.sendRequest(
+        `${import.meta.env.VITE_BACKEND_API_URL}/Projects`,
+      );
 
-      console.log("PROJECT RESPONSE:", response)
+      const projectData = res?.data?.value || res?.data || [];
 
-      const projectData =
-        response?.data?.value ||
-        response?.data ||
-        []
-
-      console.log("PROCESSED PROJECTS:", projectData)
-
-      setProjects(projectData)
-
+      setProjects(projectData);
     } catch (error) {
-      console.error(error)
-      toast.error("Failed to load projects")
-    } finally {
-      setLoadingProjects(false)
+      console.error("Project fetch failed", error);
+      toast.error("Failed to load projects");
     }
-  }
+  };
 
-  const fetchSprints = async (projectId?: string) => {
+  const fetchSprints = async (projectId: string) => {
     try {
-      setLoadingSprints(true)
+      const res = await http.sendRequest(
+        `${import.meta.env.VITE_BACKEND_API_URL}/Sprints?$filter=project_ID eq '${projectId}'`,
+      );
 
-      let url = `${BASE_URL}/Sprints`
+      const sprintData = res?.data?.value || res?.data || [];
 
-      if (projectId) {
-
-        url += `?$filter=project_ID eq ${projectId}`
-      }
-
-      const response = await http.sendRequest(url)
-
-      console.log("SPRINT RESPONSE:", response)
-
-      const sprintData =
-        response?.data?.value ||
-        response?.data ||
-        []
-
-      console.log("PROCESSED SPRINTS:", sprintData)
-
-      setSprints(sprintData)
-
+      setSprints(sprintData);
     } catch (error) {
-      console.error("Sprint fetch failed:", error)
-      toast.error("Failed to load sprints")
-    } finally {
-      setLoadingSprints(false)
+      console.error("Sprint fetch failed", error);
+      toast.error("Failed to load sprints");
     }
-  }
+  };
 
-  const fetchRequirement = async () => {
-    try {
-      const response = await http.sendRequest(
-        `${BASE_URL}/Requirements(${requirementId})`
-      )
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
-      const requirement = response?.data
+  useEffect(() => {
+    if (update && data) {
+      setValue("title", data.title);
+      setValue("description", data.description);
+      setValue("priority", data.priority);
+      setValue("status", data.status);
+      setValue("project_ID", data.project_ID);
+      setValue("sprint_ID", data.sprint_ID || "");
 
-      if (requirement) {
-        setValue("title", requirement.title || "")
-        setValue("description", requirement.description || "")
-        setValue("priority", requirement.priority || "")
-        setValue("status", requirement.status || "")
-        setValue("project_ID", requirement.project_ID || "")
-        setValue("sprint_ID", requirement.sprint_ID || "")
-
-        if (requirement.project_ID) {
-          fetchSprints(requirement.project_ID)
-        }
+      if (data.project_ID) {
+        fetchSprints(data.project_ID);
       }
-    } catch (error) {
-      toast.error("Failed to load requirement")
     }
-  }
+  }, [update, data]);
 
   useEffect(() => {
     if (selectedProject) {
-      fetchSprints(selectedProject)
-      setValue("sprint_ID", "")
+      fetchSprints(selectedProject);
+      setValue("sprint_ID", "");
     }
-  }, [selectedProject])
+  }, [selectedProject]);
 
-  useEffect(() => {
-    fetchProjects()
-
-    if (update && requirementId) {
-      fetchRequirement()
-    }
-  }, [update, requirementId])
-
-  const onSubmit = async (values: RequirementFormData) => {
+  const onSubmit = async (values: FormData) => {
     try {
-      const url = update
-        ? `${BASE_URL}/Requirements(${requirementId})`
-        : `${BASE_URL}/Requirements`
+      const isEdit = Boolean(update && data?.ID);
 
-      const method = update ? "PATCH" : "POST"
-
-      const payload = {
-        title: values.title,
-        description: values.description,
-        priority: values.priority,
-        status: values.status,
-        project_ID: values.project_ID,
-        sprint_ID: values.sprint_ID || null,
-      }
+      const url =
+        import.meta.env.VITE_BACKEND_API_URL +
+        (isEdit ? `/Requirements('${data?.ID}')` : `/Requirements`);
 
       await http.sendRequest(url, {
-        method,
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
+        body: JSON.stringify(values),
+      });
 
-      toast.success(
-        update
-          ? "Requirement updated successfully"
-          : "Requirement created successfully"
-      )
+      toast.success(`Requirement ${isEdit ? "updated" : "created"}`);
 
-      navigate("/admin/requirements")
+      navigate("/admin/requirements");
     } catch (error) {
-      toast.error("Something went wrong")
+      toast.error("Something went wrong");
     }
-  }
+  };
 
   return (
     <Card className="border-0 shadow-none">
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-
-          <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Title</Label>
-              <Input
-                {...register("title", { required: true })}
-                placeholder="Enter title"
-              />
+              <Input {...register("title")} />
             </div>
 
             <div className="space-y-2">
               <Label>Description</Label>
-              <Input
-                {...register("description", { required: true })}
-                placeholder="Enter description"
-              />
+              <Input {...register("description")} />
             </div>
 
             <div className="space-y-2">
               <Label>Priority</Label>
+
               <Select
                 value={watch("priority")}
                 onValueChange={(v) => setValue("priority", v)}
@@ -233,6 +165,7 @@ export default function RequirementForm({
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Priority" />
                 </SelectTrigger>
+
                 <SelectContent>
                   <SelectItem value="High">High</SelectItem>
                   <SelectItem value="Medium">Medium</SelectItem>
@@ -243,14 +176,15 @@ export default function RequirementForm({
 
             <div className="space-y-2">
               <Label>Status</Label>
+
               <Select
                 value={watch("status")}
                 onValueChange={(v) => setValue("status", v)}
-               
-                >
-                <SelectTrigger  className="w-full">
-                  <SelectValue placeholder="Select Status"  />
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
+
                 <SelectContent>
                   <SelectItem value="Draft">Draft</SelectItem>
                   <SelectItem value="Approved">Approved</SelectItem>
@@ -261,14 +195,15 @@ export default function RequirementForm({
 
             <div className="space-y-2">
               <Label>Project</Label>
+
               <Select
                 value={watch("project_ID")}
                 onValueChange={(v) => setValue("project_ID", v)}
-                disabled={loadingProjects}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Project" />
                 </SelectTrigger>
+
                 <SelectContent>
                   {projects.map((project) => (
                     <SelectItem key={project.ID} value={project.ID}>
@@ -281,14 +216,16 @@ export default function RequirementForm({
 
             <div className="space-y-2">
               <Label>Sprint</Label>
+
               <Select
                 value={watch("sprint_ID")}
                 onValueChange={(v) => setValue("sprint_ID", v)}
-                disabled={!selectedProject || loadingSprints}
+                disabled={!selectedProject}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Sprint" />
                 </SelectTrigger>
+
                 <SelectContent>
                   {sprints.map((sprint) => (
                     <SelectItem key={sprint.ID} value={sprint.ID}>
@@ -300,13 +237,11 @@ export default function RequirementForm({
             </div>
           </div>
 
-
           <Button type="submit" className="w-full">
             {update ? "Update Requirement" : "Add Requirement"}
           </Button>
-
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

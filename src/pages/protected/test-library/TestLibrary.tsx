@@ -49,9 +49,9 @@ export default function TestLibrary() {
     priority: "Medium",
   })
 
-
   const buildTree = (data: FolderNode[]) => {
     const map: Record<string, FolderNode> = {}
+
     data.forEach((item) => {
       map[item.ID] = { ...item, children: [] }
     })
@@ -87,7 +87,6 @@ export default function TestLibrary() {
     fetchFolders()
   }, [])
 
-
   const handleSelect = (folder: FolderNode) => {
     if (selected) {
       setHistory((prev) => [...prev, selected])
@@ -106,6 +105,7 @@ export default function TestLibrary() {
   const handleBack = () => {
     if (!history.length) return
     const prev = history[history.length - 1]
+
     setHistory((h) => h.slice(0, -1))
     setFuture((f) => (selected ? [selected, ...f] : f))
     setSelected(prev)
@@ -120,6 +120,7 @@ export default function TestLibrary() {
   const handleForward = () => {
     if (!future.length) return
     const next = future[0]
+
     setFuture((f) => f.slice(1))
     setHistory((h) => (selected ? [...h, selected] : h))
     setSelected(next)
@@ -131,7 +132,6 @@ export default function TestLibrary() {
     }
   }
 
-
   const createFolder = async (parentId: string | null) => {
     await fetch(FOLDER_API, {
       method: "POST",
@@ -141,14 +141,14 @@ export default function TestLibrary() {
         parentFolder_ID: parentId,
       }),
     })
+
     toast.success("Folder created")
     fetchFolders()
   }
 
   const deleteFolder = async (id: string) => {
-    await fetch(`${FOLDER_API}('${id}')`, {
-      method: "DELETE",
-    })
+    await fetch(`${FOLDER_API}('${id}')`, { method: "DELETE" })
+
     toast.success("Folder deleted")
     fetchFolders()
   }
@@ -159,11 +159,10 @@ export default function TestLibrary() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     })
+
     toast.success("Folder renamed")
     fetchFolders()
   }
-
-
 
   const handleCreateTestCase = async () => {
     if (!selected || !form.title.trim()) {
@@ -181,8 +180,15 @@ export default function TestLibrary() {
     })
 
     toast.success("Test case created")
+
     setShowModal(false)
-    setForm({ title: "", preconditions: "", priority: "Medium" })
+
+    setForm({
+      title: "",
+      preconditions: "",
+      priority: "Medium",
+    })
+
     fetchTestCases(selected.ID)
   }
 
@@ -190,28 +196,29 @@ export default function TestLibrary() {
     await fetch(`${TESTCASE_API}('${id}')`, {
       method: "DELETE",
     })
+
     toast.success("Deleted")
+
     if (selected) fetchTestCases(selected.ID)
   }
 
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
       case "High":
-        return "bg-red-100 text-red-600"
+        return "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300"
       case "Medium":
-        return "bg-yellow-100 text-yellow-700"
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
       default:
-        return "bg-green-100 text-green-700"
+        return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
     }
   }
 
-
-
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-zinc-900 text-gray-900 dark:text-gray-100">
 
-      <div className="w-72 bg-white border-r flex flex-col">
-        <div className="h-16 flex items-center px-6 border-b font-semibold">
+      <div className="w-64 sm:w-72 bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-700 flex flex-col">
+
+        <div className="h-16 flex items-center px-6 border-b border-gray-200 dark:border-zinc-700 font-semibold">
           Test Library
           <Plus
             size={16}
@@ -235,47 +242,60 @@ export default function TestLibrary() {
         </div>
       </div>
 
-
       <div className="flex-1 flex flex-col">
-        <div className="h-16 bg-white border-b px-8 flex items-center gap-3">
+
+        <div className="h-16 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-700 px-4 sm:px-8 flex items-center gap-3">
+
           <button onClick={handleBack} disabled={!history.length}>
             <ArrowLeft size={18} />
           </button>
+
           <button onClick={handleForward} disabled={!future.length}>
             <ArrowRight size={18} />
           </button>
+
           <h2 className="font-semibold text-lg">
             {selected ? selected.name : "Select Folder"}
           </h2>
+
         </div>
 
-        <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex-1 p-4 sm:p-8 overflow-y-auto">
+
           {selected &&
             selected.children &&
             selected.children.length > 0 && (
+
               <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
                 {selected.children.map((child) => (
                   <div
                     key={child.ID}
                     onClick={() => handleSelect(child)}
-                    className="bg-white border rounded-xl p-6 hover:shadow-sm cursor-pointer transition"
+                    className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl p-6 hover:shadow-md transition cursor-pointer"
                   >
                     <Folder size={28} />
+
                     <p className="mt-3 text-sm font-medium">
                       {child.name}
                     </p>
+
                   </div>
                 ))}
+
               </div>
+
             )}
 
           {selected &&
             (!selected.children ||
               selected.children.length === 0) && (
+
               <>
+
                 <button
                   onClick={() => setShowModal(true)}
-                  className="mb-6 bg-black text-white px-5 py-2.5 rounded-md text-sm"
+                  className="mb-6 bg-black dark:bg-white dark:text-black text-white px-5 py-2.5 rounded-md text-sm"
                 >
                   + New Test Case
                 </button>
@@ -285,23 +305,28 @@ export default function TestLibrary() {
                     No test cases available
                   </div>
                 ) : (
+
                   <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
                     {testCases.map((tc) => (
+
                       <div
                         key={tc.ID}
-                        className="bg-white border rounded-xl p-6 flex flex-col justify-between hover:shadow-sm transition"
+                        className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl p-6 flex flex-col justify-between hover:shadow-md transition"
                       >
+
                         <div>
                           <h3 className="font-semibold text-base truncate">
                             {tc.title}
                           </h3>
 
-                          <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">
                             {tc.preconditions}
                           </p>
                         </div>
 
                         <div className="flex items-center justify-between mt-6">
+
                           <span
                             className={`px-3 py-1 text-xs rounded-full font-medium ${getPriorityStyle(
                               tc.priority
@@ -313,36 +338,49 @@ export default function TestLibrary() {
                           <Trash2
                             size={16}
                             className="cursor-pointer text-gray-400 hover:text-red-500"
-                            onClick={() =>
-                              deleteTestCase(tc.ID)
-                            }
+                            onClick={() => deleteTestCase(tc.ID)}
                           />
+
                         </div>
+
                       </div>
+
                     ))}
+
                   </div>
+
                 )}
+
               </>
             )}
+
         </div>
+
       </div>
 
-
       {showModal && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center">
-          <div className="bg-white w-[450px] rounded-xl p-6">
+
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-xl p-6 border border-gray-200 dark:border-zinc-700">
+
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">Create Test Case</h3>
+
+              <h3 className="font-semibold">
+                Create Test Case
+              </h3>
+
               <X
                 size={16}
                 className="cursor-pointer"
                 onClick={() => setShowModal(false)}
               />
+
             </div>
 
             <input
               placeholder="Title"
-              className="w-full border p-2 rounded mb-3"
+              className="w-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2 rounded mb-3"
               value={form.title}
               onChange={(e) =>
                 setForm({ ...form, title: e.target.value })
@@ -351,7 +389,7 @@ export default function TestLibrary() {
 
             <textarea
               placeholder="Preconditions"
-              className="w-full border p-2 rounded mb-3"
+              className="w-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2 rounded mb-3"
               value={form.preconditions}
               onChange={(e) =>
                 setForm({
@@ -362,7 +400,7 @@ export default function TestLibrary() {
             />
 
             <select
-              className="w-full border p-2 rounded mb-4"
+              className="w-full border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2 rounded mb-4"
               value={form.priority}
               onChange={(e) =>
                 setForm({
@@ -377,27 +415,32 @@ export default function TestLibrary() {
             </select>
 
             <div className="flex justify-end gap-2">
+
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 border rounded"
+                className="px-4 py-2 border border-gray-200 dark:border-zinc-700 rounded"
               >
                 Cancel
               </button>
+
               <button
                 onClick={handleCreateTestCase}
-                className="px-4 py-2 bg-black text-white rounded"
+                className="px-4 py-2 bg-black dark:bg-white dark:text-black text-white rounded"
               >
                 Create
               </button>
+
             </div>
+
           </div>
+
         </div>
+
       )}
+
     </div>
   )
 }
-
-
 
 function TreeItem({
   node,
@@ -407,31 +450,34 @@ function TreeItem({
   deleteFolder,
   renameFolder,
 }: any) {
+
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(node.name)
 
   return (
     <div>
+
       <div
-        className="group flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100 cursor-pointer"
+        className="group flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer"
         style={{ marginLeft: level * 14 }}
         onClick={() => {
           setOpen(!open)
           onSelect(node)
         }}
       >
-        {node.children && node.children.length > 0 ? (
-          open ? <ChevronDown size={14} /> : <ChevronRight size={14} />
-        ) : (
-          <div style={{ width: 14 }} />
-        )}
+
+        {node.children && node.children.length > 0
+          ? open
+            ? <ChevronDown size={14} />
+            : <ChevronRight size={14} />
+          : <div style={{ width: 14 }} />}
 
         <Folder size={16} />
 
         {editing ? (
           <input
-            className="flex-1 text-sm border px-2 py-1 rounded"
+            className="flex-1 text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 py-1 rounded"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onBlur={() => {
@@ -442,12 +488,13 @@ function TreeItem({
             autoFocus
           />
         ) : (
-          <span className="flex-1 text-sm truncate">
+          <span className="text-sm gap-10 ">
             {node.name}
           </span>
         )}
 
-        <div className="hidden group-hover:flex items-center gap-2 text-gray-400">
+        <div className="  items-left hidden group-hover:flex gap-2 text-gray-400">
+
           <Plus
             size={14}
             onClick={(e) => {
@@ -455,6 +502,7 @@ function TreeItem({
               createFolder(node.ID)
             }}
           />
+
           <Pencil
             size={14}
             onClick={(e) => {
@@ -462,6 +510,7 @@ function TreeItem({
               setEditing(true)
             }}
           />
+
           <Trash2
             size={14}
             onClick={(e) => {
@@ -469,12 +518,13 @@ function TreeItem({
               deleteFolder(node.ID)
             }}
           />
+
         </div>
+
       </div>
 
       {open &&
-        node.children &&
-        node.children.map((child: any) => (
+        node.children?.map((child: any) => (
           <TreeItem
             key={child.ID}
             node={child}
@@ -485,6 +535,7 @@ function TreeItem({
             renameFolder={renameFolder}
           />
         ))}
+
     </div>
   )
 }
