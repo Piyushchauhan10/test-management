@@ -69,64 +69,64 @@ export default function RequirementForm({
 
   const selectedProject = watch("project_ID")
 
-   
- const fetchProjects = async () => {
-  try {
-    const response = await http.sendRequest(
-      `${BASE_URL}/Projects`
-    )
 
-    console.log("PROJECT RESPONSE:", response)
+  const fetchProjects = async () => {
+    try {
+      const response = await http.sendRequest(
+        `${BASE_URL}/Projects`
+      )
 
-    const projectData =
-      response?.data?.value ||
-      response?.data ||
-      []
+      console.log("PROJECT RESPONSE:", response)
 
-    console.log("PROCESSED PROJECTS:", projectData)
+      const projectData =
+        response?.data?.value ||
+        response?.data ||
+        []
 
-    setProjects(projectData)
+      console.log("PROCESSED PROJECTS:", projectData)
 
-  } catch (error) {
-    console.error(error)
-    toast.error("Failed to load projects")
-  } finally {
-    setLoadingProjects(false)
-  }
-}
- 
- const fetchSprints = async (projectId?: string) => {
-  try {
-    setLoadingSprints(true)
+      setProjects(projectData)
 
-    let url = `${BASE_URL}/Sprints`
-
-    if (projectId) {
-      
-      url += `?$filter=project_ID eq ${projectId}`
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to load projects")
+    } finally {
+      setLoadingProjects(false)
     }
-
-    const response = await http.sendRequest(url)
-
-    console.log("SPRINT RESPONSE:", response)
-
-    const sprintData =
-      response?.data?.value ||
-      response?.data ||
-      []
-
-    console.log("PROCESSED SPRINTS:", sprintData)
-
-    setSprints(sprintData)
-
-  } catch (error) {
-    console.error("Sprint fetch failed:", error)
-    toast.error("Failed to load sprints")
-  } finally {
-    setLoadingSprints(false)
   }
-}
- 
+
+  const fetchSprints = async (projectId?: string) => {
+    try {
+      setLoadingSprints(true)
+
+      let url = `${BASE_URL}/Sprints`
+
+      if (projectId) {
+
+        url += `?$filter=project_ID eq ${projectId}`
+      }
+
+      const response = await http.sendRequest(url)
+
+      console.log("SPRINT RESPONSE:", response)
+
+      const sprintData =
+        response?.data?.value ||
+        response?.data ||
+        []
+
+      console.log("PROCESSED SPRINTS:", sprintData)
+
+      setSprints(sprintData)
+
+    } catch (error) {
+      console.error("Sprint fetch failed:", error)
+      toast.error("Failed to load sprints")
+    } finally {
+      setLoadingSprints(false)
+    }
+  }
+
   const fetchRequirement = async () => {
     try {
       const response = await http.sendRequest(
@@ -151,14 +151,14 @@ export default function RequirementForm({
       toast.error("Failed to load requirement")
     }
   }
- 
+
   useEffect(() => {
     if (selectedProject) {
       fetchSprints(selectedProject)
       setValue("sprint_ID", "")
     }
   }, [selectedProject])
- 
+
   useEffect(() => {
     fetchProjects()
 
@@ -166,7 +166,7 @@ export default function RequirementForm({
       fetchRequirement()
     }
   }, [update, requirementId])
- 
+
   const onSubmit = async (values: RequirementFormData) => {
     try {
       const url = update
@@ -201,101 +201,105 @@ export default function RequirementForm({
       toast.error("Something went wrong")
     }
   }
- 
+
   return (
     <Card className="border-0 shadow-none">
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-          <div>
-            <Label>Title</Label>
-            <Input
-              {...register("title", { required: true })}
-              placeholder="Enter title"
-            />
+          <div className="grid md:grid-cols-2 grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input
+                {...register("title", { required: true })}
+                placeholder="Enter title"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                {...register("description", { required: true })}
+                placeholder="Enter description"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select
+                value={watch("priority")}
+                onValueChange={(v) => setValue("priority", v)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select
+                value={watch("status")}
+                onValueChange={(v) => setValue("status", v)}
+               
+                >
+                <SelectTrigger  className="w-full">
+                  <SelectValue placeholder="Select Status"  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Draft">Draft</SelectItem>
+                  <SelectItem value="Approved">Approved</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Project</Label>
+              <Select
+                value={watch("project_ID")}
+                onValueChange={(v) => setValue("project_ID", v)}
+                disabled={loadingProjects}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.ID} value={project.ID}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Sprint</Label>
+              <Select
+                value={watch("sprint_ID")}
+                onValueChange={(v) => setValue("sprint_ID", v)}
+                disabled={!selectedProject || loadingSprints}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Sprint" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sprints.map((sprint) => (
+                    <SelectItem key={sprint.ID} value={sprint.ID}>
+                      {sprint.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div>
-            <Label>Description</Label>
-            <Input
-              {...register("description", { required: true })}
-              placeholder="Enter description"
-            />
-          </div>
-
-          <div>
-            <Label>Priority</Label>
-            <Select
-              value={watch("priority")}
-              onValueChange={(v) => setValue("priority", v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="High">High</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="Low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>Status</Label>
-            <Select
-              value={watch("status")}
-              onValueChange={(v) => setValue("status", v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Draft">Draft</SelectItem>
-                <SelectItem value="Approved">Approved</SelectItem>
-                <SelectItem value="Rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>Project</Label>
-            <Select
-              value={watch("project_ID")}
-              onValueChange={(v) => setValue("project_ID", v)}
-              disabled={loadingProjects}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Project" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((project) => (
-                  <SelectItem key={project.ID} value={project.ID}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>Sprint</Label>
-            <Select
-              value={watch("sprint_ID")}
-              onValueChange={(v) => setValue("sprint_ID", v)}
-              disabled={!selectedProject || loadingSprints}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Sprint" />
-              </SelectTrigger>
-              <SelectContent>
-                {sprints.map((sprint) => (
-                  <SelectItem key={sprint.ID} value={sprint.ID}>
-                    {sprint.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
           <Button type="submit" className="w-full">
             {update ? "Update Requirement" : "Add Requirement"}

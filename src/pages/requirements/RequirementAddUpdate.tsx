@@ -15,7 +15,7 @@ const CreateRequirement = () => {
                 </Button>
             </CardHeader>
             <CardContent>
-                <RequirementForm update={true}/>
+                <RequirementForm update={false}/>
             </CardContent>
         </Card>
     )

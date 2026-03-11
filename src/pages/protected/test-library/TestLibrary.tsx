@@ -49,7 +49,6 @@ export default function TestLibrary() {
     priority: "Medium",
   })
 
-   
 
   const buildTree = (data: FolderNode[]) => {
     const map: Record<string, FolderNode> = {}
@@ -87,7 +86,7 @@ export default function TestLibrary() {
   useEffect(() => {
     fetchFolders()
   }, [])
- 
+
 
   const handleSelect = (folder: FolderNode) => {
     if (selected) {
@@ -131,7 +130,7 @@ export default function TestLibrary() {
       fetchTestCases(next.ID)
     }
   }
- 
+
 
   const createFolder = async (parentId: string | null) => {
     await fetch(FOLDER_API, {
@@ -164,7 +163,7 @@ export default function TestLibrary() {
     fetchFolders()
   }
 
- 
+
 
   const handleCreateTestCase = async () => {
     if (!selected || !form.title.trim()) {
@@ -206,11 +205,11 @@ export default function TestLibrary() {
     }
   }
 
- 
+
 
   return (
     <div className="flex h-screen bg-gray-50">
-    
+
       <div className="w-72 bg-white border-r flex flex-col">
         <div className="h-16 flex items-center px-6 border-b font-semibold">
           Test Library
@@ -236,7 +235,7 @@ export default function TestLibrary() {
         </div>
       </div>
 
-   
+
       <div className="flex-1 flex flex-col">
         <div className="h-16 bg-white border-b px-8 flex items-center gap-3">
           <button onClick={handleBack} disabled={!history.length}>
@@ -328,7 +327,7 @@ export default function TestLibrary() {
         </div>
       </div>
 
-     
+
       {showModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center">
           <div className="bg-white w-[450px] rounded-xl p-6">
@@ -398,7 +397,7 @@ export default function TestLibrary() {
   )
 }
 
- 
+
 
 function TreeItem({
   node,
