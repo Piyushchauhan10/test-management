@@ -24,7 +24,7 @@ const CreateTestCycle = () => {
       </CardHeader>
 
       <CardContent>
-        <TestCycleForm update={false } />
+        <TestCycleForm update={false} />
       </CardContent>
     </Card>
   )

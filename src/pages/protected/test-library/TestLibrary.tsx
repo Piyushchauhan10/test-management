@@ -449,6 +449,8 @@ renameFolder,
 }: any) {
 
 const [open, setOpen] = useState(false);
+const [isEditing, setIsEditing] = useState(false);
+const [editName, setEditName] = useState(node.name);
 
 return (
 
@@ -470,25 +472,59 @@ open ? <ChevronDown size={14}/> : <ChevronRight size={14}/>
 )}
 
 <Folder size={16}/>
+{isEditing ? (
+  <input
+    autoFocus
+    value={editName}
+    onChange={(e) => setEditName(e.target.value)}
+    onBlur={() => {
+      if (editName.trim() && editName !== node.name) {
+        renameFolder(node.ID, editName);
+      }
+      setIsEditing(false);
+    }}
+    onKeyDown={(e) => {
+      if (e.key === "Enter") {
+        if (editName.trim() && editName !== node.name) {
+          renameFolder(node.ID, editName);
+        }
+        setIsEditing(false);
+      }
+      if (e.key === "Escape") {
+        setEditName(node.name);
+        setIsEditing(false);
+      }
+    }}
+    className="text-sm border rounded px-1 py-0.5 w-full bg-white dark:bg-zinc-800"
+  />
+) : (
+  <span className="text-sm">{node.name}</span>
+)}
 
-<span className="text-sm">{node.name}</span>
+<div className="hidden group-hover:flex gap-2 ml-auto items-center">
 
-<div className="hidden group-hover:flex gap-2 ml-auto">
+ <Plus
+  size={14}
+  onClick={(e)=>{
+    e.stopPropagation();
+    createFolder(node.ID);
+  }}
+/>
 
-<Plus
-size={14}
-onClick={(e)=>{
-e.stopPropagation();
-createFolder(node.ID);
-}}
+<Pencil
+  size={14}
+  onClick={(e)=>{
+    e.stopPropagation();
+    setIsEditing(true);
+  }}
 />
 
 <Trash2
-size={14}
-onClick={(e)=>{
-e.stopPropagation();
-deleteFolder(node.ID);
-}}
+  size={14}
+  onClick={(e)=>{
+    e.stopPropagation();
+    deleteFolder(node.ID);
+  }}
 />
 
 </div>
