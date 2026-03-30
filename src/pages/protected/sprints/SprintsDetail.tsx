@@ -104,10 +104,12 @@ const getColumns = (onDelete: (id: string) => void): ColumnDef<any>[] => [
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
               <Link
-                to={`/admin/test-cycles/edit/${row.original.project_ID}/${row.original.sprint_ID}/${row.original.ID}`}
+                to={`/admin/project/${row.original.project_ID}/sprint/${row.original.sprint_ID}/test-cycles/${row.original.ID}/edit`}
               >
+                
                 Edit
               </Link>
+
             </DropdownMenuItem>
 
             <DropdownMenuItem
