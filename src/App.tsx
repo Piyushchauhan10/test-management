@@ -29,6 +29,9 @@ import TestLibrary from "./pages/protected/test-library/TestLibrary";
 import EditRequirement from "./pages/requirements/EditRequirement";
 import RequirementsList from "./pages/requirements/RequirementList";
 import CreateRequirement from "./pages/requirements/CreateRequirements";
+import DefectsList from "./pages/protected/defects/DefectsList";
+import CreateDefect from "./pages/protected/defects/CreateDefect";
+import EditDefect from "./pages/protected/defects/EditDefect";
 
 function App() {
   const location = useLocation();
@@ -89,6 +92,18 @@ function App() {
         {
           path: "requirements/:requirementId/edit",
           element: <EditRequirement />,
+        },
+        {
+          path: "defects",
+          element: <DefectsList />,
+        },
+        {
+          path: "defects/create",
+          element: <CreateDefect />,
+        },
+        {
+          path: "defects/:defectId/edit",
+          element: <EditDefect />,
         },
 
         { path: "teams", element: <TeamList /> },

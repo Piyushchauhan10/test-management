@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import useHttp from "@/hooks/use-http"
 
@@ -47,118 +47,124 @@ import {
 
 import { ArrowUpDown, ChevronDown, MoreVertical } from "lucide-react"
 
-type Team = {
+type Defect = {
   ID: string
-  name: string
-  description?: string
+  title: string
+  description: string
+  severity: string
+  status: string
 }
 
-export default function TeamsList() {
+const getColumns = (
+  onDelete: (id: string) => void
+): ColumnDef<Defect>[] => [
+  {
+    accessorKey: "title",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        className="px-0"
+        onClick={() =>
+          column.toggleSorting(column.getIsSorted() === "asc")
+        }
+      >
+        Title <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+  },
+  {
+    accessorKey: "severity",
+    header: "Severity",
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    enableHiding: false,
+    cell: ({ row }) => (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link to={`/admin/defects/${row.original.ID}/edit`}>
+              Edit
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            className="text-red-600 cursor-pointer"
+            onClick={() => onDelete(row.original.ID)}
+          >
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ),
+  },
+]
+
+export default function DefectsList() {
   const http = useHttp()
 
-  const [teams, setTeams] = useState<Team[]>([])
+  const [defects, setDefects] = useState<Defect[]>([])
   const [loading, setLoading] = useState(true)
 
   const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnFilters, setColumnFilters] =
+    useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] =
     useState<VisibilityState>({})
 
-  const fetchTeams = async () => {
+  const fetchDefects = async () => {
     try {
-      const response = await http.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Teams`
+      const res = await http.sendRequest(
+        `${import.meta.env.VITE_BACKEND_API_URL}/Defects`
       )
 
-      let teamData: Team[] = []
+      const data =
+        res?.data?.value ||
+        res?.data ||
+        []
 
-      if (Array.isArray(response?.data)) {
-        teamData = response.data
-      } else if (Array.isArray(response?.data?.value)) {
-        teamData = response.data.value
-      }
-
-      setTeams(teamData)
+      setDefects(data)
     } catch (error) {
-      console.error("Failed to load teams", error)
+      console.error("Failed to load defects", error)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchTeams()
+    fetchDefects()
   }, [])
 
-  const deleteTeamHandler = async (id: string) => {
+  const deleteHandler = async (id: string) => {
     try {
       await http.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Teams/${id}`,
+        `${import.meta.env.VITE_BACKEND_API_URL}/Defects('${id}')`,
         { method: "DELETE" }
       )
-      setTeams((prev) => prev.filter((t) => t.ID !== id))
+
+      setDefects((prev) =>
+        prev.filter((d) => d.ID !== id)
+      )
     } catch (error) {
       console.error("Delete failed", error)
     }
   }
 
-  const columns: ColumnDef<Team>[] = [
-    {
-      accessorKey: "name",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() =>
-            column.toggleSorting(column.getIsSorted() === "asc")
-          }
-        >
-          Team Name <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      enableHiding: false,
-      cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem asChild>
-              <Link to={`/admin/teams/create/${row.original.ID}`}>
-                Edit
-              </Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              className="text-red-600"
-              onClick={() => deleteTeamHandler(row.original.ID)}
-            >
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
-    },
-  ]
-
   const table = useReactTable({
-    data: teams,
-    columns,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
+    data: defects,
+    columns: getColumns(deleteHandler),
+    state: { sorting, columnFilters, columnVisibility },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -168,7 +174,7 @@ export default function TeamsList() {
     getPaginationRowModel: getPaginationRowModel(),
   })
 
-  if (loading) return <p className="p-4">Loading teams...</p>
+  if (loading) return <p className="p-4">Loading...</p>
 
   return (
     <Card>
@@ -180,17 +186,22 @@ export default function TeamsList() {
                 <Link to="/admin">Home</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
+
             <BreadcrumbSeparator />
+
             <BreadcrumbItem>
-              <BreadcrumbPage>Teams</BreadcrumbPage>
+              <BreadcrumbPage>Defects</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
 
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Teams</h2>
+          <h2 className="text-xl font-semibold">Defects</h2>
+
           <Button asChild>
-            <Link to="/admin/teams/create">Add Team</Link>
+            <Link to="/admin/defects/create">
+              Add Defect
+            </Link>
           </Button>
         </div>
       </CardHeader>
@@ -198,12 +209,16 @@ export default function TeamsList() {
       <CardContent>
         <div className="flex items-center py-4 gap-4">
           <Input
-            placeholder="Filter team name..."
+            placeholder="Filter title..."
             value={
-              (table.getColumn("name")?.getFilterValue() as string) ?? ""
+              (table
+                .getColumn("title")
+                ?.getFilterValue() as string) ?? ""
             }
             onChange={(e) =>
-              table.getColumn("name")?.setFilterValue(e.target.value)
+              table
+                .getColumn("title")
+                ?.setFilterValue(e.target.value)
             }
             className="max-w-sm"
           />
@@ -239,7 +254,7 @@ export default function TeamsList() {
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id}>
                 {group.headers.map((header) => (
-                  <TableHead key={header.id} className="text-left">
+                  <TableHead key={header.id}>
                     {flexRender(
                       header.column.columnDef.header,
                       header.getContext()
@@ -255,10 +270,7 @@ export default function TeamsList() {
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="text-left"
-                    >
+                    <TableCell key={cell.id} className="text-left">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

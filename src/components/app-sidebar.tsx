@@ -4,6 +4,7 @@ import {
   UsersRound,
   FolderTree,
   ClipboardList,
+  SearchCheckIcon,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import useHttp from "@/hooks/use-http"
 import { ProjectSwitcher } from "./project-switcher"
+import { ZodEmoji } from "zod"
 
 const topSection = [
   {
@@ -28,6 +30,17 @@ const topSection = [
       {
         title: "Manage Test Library",
         url: "/admin/test-library",
+      },
+    ],
+  },
+   {
+    title: "Test Lab",
+    url: "/admin/testlab",
+    icon: SearchCheckIcon,
+    items: [
+      {
+        title: "Manage Test Lab",
+        url: "/admin/testlab",
       },
     ],
   },
@@ -64,6 +77,17 @@ const organizationSection = [
       {
         title: "Manage Requirements",
         url: "/admin/requirements",
+      },
+    ],
+  },
+  {
+    title: "Defects",
+    url: "/admin/defects",
+    icon: ClipboardList,
+    items: [
+      {
+        title: "Manage defects",
+        url: "/admin/defects",
       },
     ],
   },
