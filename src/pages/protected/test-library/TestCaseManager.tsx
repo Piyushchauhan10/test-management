@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Pencil, Trash2, Plus, Check, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
 
 type TestCase = {
   ID: string;
@@ -341,34 +342,40 @@ export default function TestCaseManager({ selected }: any) {
           <h3 className="font-semibold mb-4">Test Steps</h3>
 
           {/* ADD */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <input
-              className="input"
-              placeholder="Action"
-              value={stepForm.action}
-              onChange={(e) =>
-                setStepForm({ ...stepForm, action: e.target.value })
-              }
-            />
-            <input
-              className="input"
-              placeholder="Expected"
-              value={stepForm.expectedResult}
-              onChange={(e) =>
-                setStepForm({
-                  ...stepForm,
-                  expectedResult: e.target.value,
-                })
-              }
-            />
-          </div>
+          <Card>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <input
+                  className="input"
+                  placeholder="Action"
+                  value={stepForm.action}
+                  onChange={(e) =>
+                    setStepForm({ ...stepForm, action: e.target.value })
+                  }
+                />
+                <input
+                  className="input"
+                  placeholder="Expected"
+                  value={stepForm.expectedResult}
+                  onChange={(e) =>
+                    setStepForm({
+                      ...stepForm,
+                      expectedResult: e.target.value,
+                    })
+                  }
+                />
 
-          <button
-            onClick={addStep}
-            className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
-          >
-            Add Step
-          </button>
+                <button
+                  onClick={addStep}
+                  className="bg-blue-600 col-span-2 text-white px-4 py-2 rounded mb-4"
+                >
+                  Add Step
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
+
 
           {/* TABLE */}
           <table className="w-full text-sm">
@@ -520,7 +527,7 @@ export default function TestCaseManager({ selected }: any) {
         </div>
       )}
 
-      <style jsx>{`
+      <style >{`
         .input {
           width: 100%;
           border: 1px solid #e5e7eb;

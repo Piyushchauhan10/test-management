@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -33,15 +33,33 @@ const Admin = () => {
               className="mr-2 data-[orientation=vertical]:h-4"
             />
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleBack}
-              className="rounded-[10px] cursor-pointer"
-            >
-              <ArrowLeft className="h-[1.2rem] w-[1.2rem] " />
-              <span className="sr-only">Go Back</span>
-            </Button>
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleBack}
+                className="rounded-[10px] cursor-pointer"
+              >
+                <ArrowLeft className="h-[1.2rem] w-[1.2rem] " />
+                <span className="sr-only">Go Back</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  if (window.history.length > 1) {
+                    navigate(1);
+                  } else {
+                    navigate("/");
+                  }
+                }}
+                className="rounded-[10px] cursor-pointer"
+              >
+                <ArrowRight className="h-[1.2rem] w-[1.2rem] " />
+                <span className="sr-only">Go Next</span>
+              </Button>
+            </div>
           </div>
           <div>
             <ModeToggle />
