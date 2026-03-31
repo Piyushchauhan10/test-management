@@ -375,8 +375,6 @@ export default function TestCaseManager({ selected }: any) {
             </CardContent>
           </Card>
 
-
-
           {/* TABLE */}
           <table className="w-full text-sm">
             <tbody>
