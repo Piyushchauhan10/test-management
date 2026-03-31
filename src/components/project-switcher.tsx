@@ -27,13 +27,18 @@ export function ProjectSwitcher({
 }) {
   const { isMobile } = useSidebar()
 
-  /* ===== GET PROJECT ID FROM URL ===== */
-  const { id: projectId } = useParams<{ id: string }>()
+  const [activeProject, setActiveProject] = React.useState<any>({})
 
-  /* ===== FIND ACTIVE PROJECT ===== */
-  const activeProject = React.useMemo(() => {
-    return projects.find((p) => p.ID === projectId)
-  }, [projects, projectId])
+  React.useEffect(() => {
+    let pId = localStorage.getItem('projectId')
+
+    if (pId) {
+      let currentProject = projects.find((project) => project.ID == pId)
+
+      setActiveProject(currentProject)
+    }
+    
+  }, [projects.length])
 
   return (
     <SidebarMenu>
@@ -72,6 +77,10 @@ export function ProjectSwitcher({
             {projects.map((project) => (
               <DropdownMenuItem key={project.ID} className="gap-2 p-2">
                 <Link
+                  onClick={() => {
+                    setActiveProject(project)
+                    localStorage.setItem("projectId", project.ID as string)
+                  }}
                   to={`/admin/project/${project.ID}/sprints`}
                   className="flex gap-2 items-center w-full"
                 >
