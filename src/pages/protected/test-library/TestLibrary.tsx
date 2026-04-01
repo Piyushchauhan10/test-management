@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Pencil, Trash2 } from "lucide-react";
 
 type FolderNode = {
   ID: string;
@@ -19,8 +20,7 @@ type FolderNode = {
   children?: FolderNode[];
 };
 
-const FOLDER_API =
-  "http://72.61.244.79:4004/odata/v4/test-management/Folders";
+const FOLDER_API = "http://72.61.244.79:4004/odata/v4/test-management/Folders";
 
 export default function TestLibrary() {
   const [tree, setTree] = useState<FolderNode[]>([]);
@@ -146,12 +146,10 @@ export default function TestLibrary() {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-zinc-900">
-      
       {/* 🔥 SIDEBAR */}
       <div className="w-72 border-r bg-white dark:bg-zinc-900">
         <div className="h-16 flex items-center px-6 border-b font-semibold">
           Test Library
-
           <Plus
             size={16}
             className="ml-auto cursor-pointer"
@@ -176,7 +174,6 @@ export default function TestLibrary() {
 
       {/* 🔥 MAIN CONTENT */}
       <div className="flex-1 flex flex-col">
-
         {/* HEADER */}
         <div className="h-16 border-b px-6 flex items-center gap-3">
           <button onClick={handleBack} disabled={!history.length}>
@@ -224,7 +221,11 @@ function TreeItem({
         }}
       >
         {node.children?.length ? (
-          open ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+          open ? (
+            <ChevronDown size={14} />
+          ) : (
+            <ChevronRight size={14} />
+          )
         ) : (
           <div style={{ width: 14 }} />
         )}
@@ -248,31 +249,38 @@ function TreeItem({
           <span className="text-sm">{node.name}</span>
         )}
 
-        <div className="hidden group-hover:flex gap-2 ml-auto">
-          <Plus
-            size={14}
+        <div className="hidden group-hover:flex items-center gap-1 ml-auto">
+           
+          <button
             onClick={(e) => {
               e.stopPropagation();
               createFolder(node.ID);
             }}
-          />
+            className=" rounded hover:bg-gray-200 dark:hover:bg-zinc-700 transition"
+          >
+            <Plus size={14} />
+          </button>
 
+          {/* Edit */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               setIsEditing(true);
             }}
+            className="p-1.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 transition"
           >
-            ✏️
+            <Pencil size={14} />
           </button>
 
+          {/* Delete */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               deleteFolder(node.ID);
             }}
+            className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 transition"
           >
-            🗑️
+            <Trash2 size={14} />
           </button>
         </div>
       </div>

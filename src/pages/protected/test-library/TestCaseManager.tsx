@@ -384,45 +384,47 @@ export default function TestCaseManager({ selected }: any) {
           {/* ADD STEP FORM */}
           {showStepForm && (
             <div className="p-4 border-b bg-gray-50">
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  className="input"
-                  placeholder="Action"
-                  value={stepForm.action}
-                  onChange={(e) =>
-                    setStepForm({ ...stepForm, action: e.target.value })
-                  }
-                />
+              <div className="border rounded-lg p-4 bg-white shadow-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    className="input focus:ring-2 focus:ring-blue-500 border-gray-300"
+                    placeholder="Action"
+                    value={stepForm.action}
+                    onChange={(e) =>
+                      setStepForm({ ...stepForm, action: e.target.value })
+                    }
+                  />
 
-                <input
-                  className="input"
-                  placeholder="Expected Result"
-                  value={stepForm.expectedResult}
-                  onChange={(e) =>
-                    setStepForm({
-                      ...stepForm,
-                      expectedResult: e.target.value,
-                    })
-                  }
-                />
+                  <input
+                    className="input focus:ring-2 focus:ring-blue-500 border-gray-300"
+                    placeholder="Expected Result"
+                    value={stepForm.expectedResult}
+                    onChange={(e) =>
+                      setStepForm({
+                        ...stepForm,
+                        expectedResult: e.target.value,
+                      })
+                    }
+                  />
 
-                <div className="col-span-2 flex justify-end gap-2">
-                  <button
-                    onClick={() => setShowStepForm(false)}
-                    className="px-3 py-1 rounded border"
-                  >
-                    Cancel
-                  </button>
+                  <div className="col-span-2 flex justify-end gap-2 pt-2 border-t">
+                    <button
+                      onClick={() => setShowStepForm(false)}
+                      className="px-3 py-1 rounded border hover:bg-gray-100 transition"
+                    >
+                      Cancel
+                    </button>
 
-                  <button
-                    onClick={async () => {
-                      await addStep();
-                      setShowStepForm(false);
-                    }}
-                    className="btn-primary flex items-center gap-1"
-                  >
-                    <Check size={14} /> Save
-                  </button>
+                    <button
+                      onClick={async () => {
+                        await addStep();
+                        setShowStepForm(false);
+                      }}
+                      className="btn-primary flex items-center gap-1 shadow hover:scale-[1.02] transition"
+                    >
+                      <Check size={14} /> Save
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
