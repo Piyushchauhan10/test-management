@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import useHttp from "@/hooks/use-http"
 import { ProjectSwitcher } from "./project-switcher"
-import { ZodEmoji } from "zod"
+ 
 
 const topSection = [
   {
