@@ -122,3 +122,46 @@
     @apply bg-background text-foreground;
   }
 }
+
+.ql-toolbar.ql-snow {
+  border: 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 85%, transparent) !important;
+  background: color-mix(in srgb, var(--muted) 45%, transparent);
+  padding: 0.75rem !important;
+}
+
+.ql-container.ql-snow {
+  border: 0 !important;
+  font-family: inherit;
+}
+
+.ql-editor {
+  min-height: 11rem;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  padding: 1rem 1rem 1.125rem !important;
+}
+
+.ql-editor.ql-blank::before {
+  color: color-mix(in srgb, var(--muted-foreground) 78%, transparent) !important;
+  font-style: normal !important;
+  left: 1rem !important;
+  right: 1rem !important;
+}
+
+.ql-editor .ql-mention {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  background: color-mix(in srgb, #0ea5e9 16%, white);
+  color: #0369a1;
+  font-weight: 700;
+  padding: 0.1rem 0.55rem;
+  margin: 0 0.1rem;
+  white-space: nowrap;
+}
+
+.dark .ql-editor .ql-mention {
+  background: color-mix(in srgb, #38bdf8 20%, transparent);
+  color: #7dd3fc;
+}

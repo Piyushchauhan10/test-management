@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
+import { RichTextContent } from '@/components/ui/rich-text-content'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -74,6 +75,9 @@ const getColumns = (onDelete: (id: string) => void): ColumnDef<any>[] => [
   {
     accessorKey: "description",
     header: "Description",
+    cell: ({ row }) => (
+      <RichTextContent value={row.getValue("description")} clamp={120} />
+    ),
   },
   {
     accessorKey: "createdBy",

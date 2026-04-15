@@ -320,7 +320,7 @@ export default function TestCaseManager({ selected }: any) {
           </thead>
 
           <tbody>
-            {filtered.map((tc) => (
+            {filtered.map((tc:any) => (
               <tr
                 key={tc.ID}
                 onClick={() => {

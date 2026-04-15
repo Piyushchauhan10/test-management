@@ -32,6 +32,7 @@ import CreateRequirement from "./pages/requirements/CreateRequirements";
 import DefectsList from "./pages/protected/defects/DefectsList";
 import CreateDefect from "./pages/protected/defects/CreateDefect";
 import EditDefect from "./pages/protected/defects/EditDefect";
+import TestLab from "./pages/protected/testlab/testlab";
 
 function App() {
   const location = useLocation();
@@ -110,6 +111,7 @@ function App() {
         { path: "teams/create", element: <CreateTeam /> },
         { path: "teams/create/:id", element: <CreateTeam /> },
         { path: "test-library", element: <TestLibrary /> },
+        { path: "test-lab", element: <TestLab /> },
       ],
     },
   ]);

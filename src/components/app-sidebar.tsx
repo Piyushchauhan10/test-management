@@ -40,7 +40,7 @@ const topSection = [
     items: [
       {
         title: "Manage Test Lab",
-        url: "/admin/testlab",
+        url: "/admin/test-lab",
       },
     ],
   },
