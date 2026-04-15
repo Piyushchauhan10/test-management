@@ -328,7 +328,7 @@ export function RichTextEditor({
           style={{ top: mentionState.top, left: mentionState.left }}
         >
           <div className="border-b border-slate-100 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Mention Someone
+            USERS
           </div>
 
           <div className="max-h-72 overflow-y-auto py-1">
@@ -377,7 +377,7 @@ export function RichTextEditor({
 
                 {index === highlightedIndex && (
                   <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
-                    Enter
+                    
                   </span>
                 )}
               </button>

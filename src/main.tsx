@@ -5,15 +5,18 @@ import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from "@/components/provider/theme-provider"
 import { Toaster } from "./components/ui/sonner"
 import { ErrorProvider } from './Context/ErrorContext.tsx'
+import { ProjectProvider } from './store/project-store.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-    <BrowserRouter>
-      <ErrorProvider>
-       <App />
-     </ErrorProvider>
-      <Toaster />
-    </BrowserRouter>
+    <ProjectProvider>
+      <BrowserRouter>
+        <ErrorProvider>
+          <App />
+        </ErrorProvider>
+        <Toaster />
+      </BrowserRouter>
+    </ProjectProvider>
   </ThemeProvider>
 )
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ProjectContext } from "@/store/project-store"
 
 type Requirement = {
   ID: string
@@ -54,8 +55,6 @@ type FormData = {
 
 export default function RequirementForm({ update, data }: Props) {
   const navigate = useNavigate()
-
-  // ✅ FIX: extract only sendRequest (stable)
   const { sendRequest } = useHttp()
 
   const activeProjectId = localStorage.getItem("projectId") || ""
@@ -63,18 +62,25 @@ export default function RequirementForm({ update, data }: Props) {
   const [sprints, setSprints] = useState<Sprint[]>([])
   const [users, setUsers] = useState<User[]>([])
 
-  const { control, register, handleSubmit, reset } = useForm<FormData>({
+  const { control, register,setValue, handleSubmit, reset } = useForm<FormData>({
     defaultValues: {
-      title: "",
-      description: "",
-      priority: "",
-      status: "",
+      title: data?.title ?? "",
+      description: data?.description ?? "",
+      priority: data?.priority ?? "",
+      status: data?.status ?? "",
       project_ID: activeProjectId,
-      sprint_ID: "",
+      sprint_ID: data?.sprint_ID ?? "",
     },
   })
 
-  // ✅ FIXED: dependency = sendRequest (NOT http)
+  const { currentProject } = useContext(ProjectContext);
+
+  setValue("project_ID", currentProject || "");
+
+  console.log(data);
+  
+
+ 
   const fetchSprints = useCallback(async (projectId: string) => {
     try {
       const res = await sendRequest(
@@ -132,7 +138,7 @@ export default function RequirementForm({ update, data }: Props) {
       users.map((user) => ({
         id: user.ID,
         label: user.username,
-        sublabel: user.email,
+        // sublabel: user.email,
       })),
     [users]
   )

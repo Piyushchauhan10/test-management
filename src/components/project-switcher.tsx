@@ -16,6 +16,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { ProjectContext } from "@/store/project-store"
+import { useContext } from "react"
 
 export function ProjectSwitcher({
   projects,
@@ -26,6 +28,8 @@ export function ProjectSwitcher({
   }[]
 }) {
   const { isMobile } = useSidebar()
+
+  const { setCurrentProject } = useContext(ProjectContext)
 
   const [activeProject, setActiveProject] = React.useState<any>({})
 
@@ -80,6 +84,7 @@ export function ProjectSwitcher({
                   onClick={() => {
                     setActiveProject(project)
                     localStorage.setItem("projectId", project.ID as string)
+                    setCurrentProject(project.ID as string)
                   }}
                   to={`/admin/project/${project.ID}/sprints`}
                   className="flex gap-2 items-center w-full"

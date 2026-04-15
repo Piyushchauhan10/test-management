@@ -1,20 +1,8 @@
 import z from "zod";
 
-const getPlainTextLength = (value: string) =>
-  value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim().length;
-
 export const projectSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters long'),
-  description: z
-    .string()
-    .refine(
-      (value) => getPlainTextLength(value) >= 2,
-      "Description must be at least 2 characters long"
-    ),
+  description: z.string().min(2, 'Description must be at least 2 characters long'),
 })
 
 export const sprintSchema = z.object({
@@ -67,14 +55,8 @@ export const requirementSchema = z.object({
 
   description: z
     .string()
-    .refine(
-      (value) => getPlainTextLength(value) >= 5,
-      "Description must be at least 5 characters"
-    )
-    .refine(
-      (value) => getPlainTextLength(value) <= 500,
-      "Description cannot exceed 500 characters"
-    ),
+    .min(5, "Description must be at least 5 characters")
+    .max(500, "Description cannot exceed 500 characters"),
 
   priority: z.enum(["High", "Medium", "Low"]),
 
