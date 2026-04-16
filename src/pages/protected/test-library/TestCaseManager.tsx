@@ -1,9 +1,42 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Pencil, Trash2, Plus, Check, X, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, ClipboardList, Loader2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+type FolderNode = {
+  ID: string;
+  name: string;
+  parentFolder_ID: string | null;
+  children?: FolderNode[];
+};
 
 type TestCase = {
   ID: string;
@@ -20,166 +53,218 @@ type TestStep = {
   testCase_ID: string;
 };
 
+type TestCaseForm = {
+  title: string;
+  preconditions: string;
+  priority: string;
+};
+
+type StepForm = {
+  action: string;
+  expectedResult: string;
+};
+
 const TESTCASE_API = `${import.meta.env.VITE_BACKEND_API_URL}/TestCases`;
 const TESTSTEP_API = `${import.meta.env.VITE_BACKEND_API_URL}/TestSteps`;
 
-export default function TestCaseManager({ selected }: any) {
+const defaultCaseForm: TestCaseForm = {
+  title: "",
+  preconditions: "",
+  priority: "Medium",
+};
+
+const defaultStepForm: StepForm = {
+  action: "",
+  expectedResult: "",
+};
+
+const priorityTone: Record<string, string> = {
+  High: "bg-rose-50 text-rose-700",
+  Medium: "bg-amber-50 text-amber-700",
+  Low: "bg-emerald-50 text-emerald-700",
+};
+
+export default function TestCaseManager({
+  selected,
+  selectedPath = [],
+}: {
+  selected: FolderNode | null;
+  selectedPath?: FolderNode[];
+}) {
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [steps, setSteps] = useState<TestStep[]>([]);
-
   const [loading, setLoading] = useState(false);
   const [stepsLoading, setStepsLoading] = useState(false);
-
-  const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(
-    null,
-  );
-
+  const [selectedTestCaseId, setSelectedTestCaseId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("All");
-
-  const [showModal, setShowModal] = useState(false);
+  const [showCaseDialog, setShowCaseDialog] = useState(false);
   const [editingTestCase, setEditingTestCase] = useState<TestCase | null>(null);
-
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
-
   const [showStepForm, setShowStepForm] = useState(false);
+  const [caseForm, setCaseForm] = useState<TestCaseForm>(defaultCaseForm);
+  const [stepForm, setStepForm] = useState<StepForm>(defaultStepForm);
+  const [editStepForm, setEditStepForm] = useState<StepForm>(defaultStepForm);
 
-  const [form, setForm] = useState({
-    title: "",
-    preconditions: "",
-    priority: "Medium",
-  });
-
-  const [stepForm, setStepForm] = useState({
-    action: "",
-    expectedResult: "",
-  });
-
-  const [editStepForm, setEditStepForm] = useState({
-    action: "",
-    expectedResult: "",
-  });
-
-  // ================= FETCH =================
-
-  const fetchTestCases = async (folderId: string) => {
+  const fetchTestCases = useCallback(async (folderId: string) => {
     setLoading(true);
-    try {
-      const res = await fetch(
-        `${TESTCASE_API}?$filter=folder_ID eq '${folderId}'`,
-      );
 
+    try {
+      const res = await fetch(`${TESTCASE_API}?$filter=folder_ID eq '${folderId}'`);
       if (!res.ok) throw new Error();
 
       const data = await res.json();
-      setTestCases(data.value || []);
+      const items = data.value || [];
+      setTestCases(items);
+
+      setSelectedTestCaseId((currentSelectedId) => {
+        if (currentSelectedId && items.some((item: TestCase) => item.ID === currentSelectedId)) {
+          return currentSelectedId;
+        }
+
+        return null;
+      });
     } catch {
       toast.error("Failed to fetch test cases");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchSteps = async (testCaseId: string) => {
+  const fetchSteps = useCallback(async (testCaseId: string) => {
     setStepsLoading(true);
-    try {
-      const res = await fetch(
-        `${TESTSTEP_API}?$filter=testCase_ID eq '${testCaseId}'`,
-      );
 
+    try {
+      const res = await fetch(`${TESTSTEP_API}?$filter=testCase_ID eq '${testCaseId}'`);
       if (!res.ok) throw new Error();
 
       const data = await res.json();
-
       const sorted = (data.value || []).sort(
         (a: TestStep, b: TestStep) => a.stepNumber - b.stepNumber,
       );
-
       setSteps(sorted);
     } catch {
       toast.error("Failed to fetch steps");
     } finally {
       setStepsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (selected && !selected.children?.length) {
-      fetchTestCases(selected.ID);
+    setSelectedTestCaseId(null);
+    setSteps([]);
+    setShowStepForm(false);
+    setEditingStepId(null);
+    setEditStepForm(defaultStepForm);
+    setStepForm(defaultStepForm);
+
+    if (selected?.ID) {
+      void fetchTestCases(selected.ID);
+    } else {
+      setTestCases([]);
     }
-  }, [selected]);
+  }, [fetchTestCases, selected?.ID]);
 
-  // ================= FILTER =================
+  useEffect(() => {
+    if (selectedTestCaseId) {
+      void fetchSteps(selectedTestCaseId);
+    } else {
+      setSteps([]);
+    }
+  }, [fetchSteps, selectedTestCaseId]);
 
-  const filtered = useMemo(() => {
+  const filteredCases = useMemo(() => {
     let data = [...testCases];
 
-    if (search) {
-      data = data.filter((tc) =>
-        tc.title.toLowerCase().includes(search.toLowerCase()),
+    if (search.trim()) {
+      const normalizedQuery = search.trim().toLowerCase();
+      data = data.filter((testCase) =>
+        [testCase.title, testCase.preconditions || ""].join(" ").toLowerCase().includes(normalizedQuery),
       );
     }
 
     if (priorityFilter !== "All") {
-      data = data.filter((tc) => tc.priority === priorityFilter);
+      data = data.filter((testCase) => testCase.priority === priorityFilter);
     }
 
     return data;
-  }, [testCases, search, priorityFilter]);
+  }, [priorityFilter, search, testCases]);
 
-  // ================= TEST CASE CRUD =================
+  const selectedTestCase =
+    filteredCases.find((testCase) => testCase.ID === selectedTestCaseId) ||
+    testCases.find((testCase) => testCase.ID === selectedTestCaseId) ||
+    null;
+
+  const hasActiveCase = Boolean(selectedTestCase);
+
+  const openCreateDialog = () => {
+    setEditingTestCase(null);
+    setCaseForm(defaultCaseForm);
+    setShowCaseDialog(true);
+  };
+
+  const openEditDialog = (testCase: TestCase) => {
+    setEditingTestCase(testCase);
+    setCaseForm({
+      title: testCase.title,
+      preconditions: testCase.preconditions || "",
+      priority: testCase.priority,
+    });
+    setShowCaseDialog(true);
+  };
 
   const handleCreate = async () => {
-    if (!form.title.trim()) return toast.error("Title required");
+    if (!selected?.ID) return;
+    if (!caseForm.title.trim()) return toast.error("Title required");
 
     try {
       const res = await fetch(TESTCASE_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
-          folder_ID: selected?.ID,
+          ...caseForm,
+          folder_ID: selected.ID,
         }),
       });
 
       if (!res.ok) throw new Error();
 
-      toast.success("Created");
-
-      setShowModal(false);
-      resetForm();
-      fetchTestCases(selected.ID);
+      toast.success("Test case created");
+      setShowCaseDialog(false);
+      setCaseForm(defaultCaseForm);
+      await fetchTestCases(selected.ID);
     } catch {
       toast.error("Create failed");
     }
   };
 
   const handleUpdate = async () => {
-    if (!editingTestCase) return;
+    if (!selected?.ID || !editingTestCase) return;
+    if (!caseForm.title.trim()) return toast.error("Title required");
 
     try {
       const res = await fetch(`${TESTCASE_API}('${editingTestCase.ID}')`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(caseForm),
       });
 
       if (!res.ok) throw new Error();
 
-      toast.success("Updated");
-
-      setShowModal(false);
+      toast.success("Test case updated");
+      setShowCaseDialog(false);
       setEditingTestCase(null);
-      fetchTestCases(selected.ID);
+      await fetchTestCases(selected.ID);
     } catch {
       toast.error("Update failed");
     }
   };
 
   const handleDelete = async () => {
+    if (!selected?.ID || !deleteId) return;
+
     try {
       const res = await fetch(`${TESTCASE_API}('${deleteId}')`, {
         method: "DELETE",
@@ -187,21 +272,24 @@ export default function TestCaseManager({ selected }: any) {
 
       if (!res.ok) throw new Error();
 
-      toast.success("Deleted");
-      setShowDeleteModal(false);
-      fetchTestCases(selected.ID);
+      toast.success("Test case deleted");
+      setShowDeleteDialog(false);
+
+      if (selectedTestCaseId === deleteId) {
+        setSelectedTestCaseId(null);
+      }
+
+      await fetchTestCases(selected.ID);
     } catch {
       toast.error("Delete failed");
     }
   };
 
-  // ================= STEP CRUD =================
-
   const addStep = async () => {
     if (!selectedTestCaseId) return;
-
-    if (!stepForm.action || !stepForm.expectedResult)
-      return toast.error("Fill all fields");
+    if (!stepForm.action.trim() || !stepForm.expectedResult.trim()) {
+      return toast.error("Fill both step fields");
+    }
 
     try {
       const res = await fetch(TESTSTEP_API, {
@@ -216,15 +304,18 @@ export default function TestCaseManager({ selected }: any) {
 
       if (!res.ok) throw new Error();
 
-      setStepForm({ action: "", expectedResult: "" });
-      fetchSteps(selectedTestCaseId);
+      toast.success("Step added");
+      setStepForm(defaultStepForm);
+      setShowStepForm(false);
+      await fetchSteps(selectedTestCaseId);
     } catch {
       toast.error("Add step failed");
     }
   };
 
   const updateStep = async (id: string) => {
-    if (!editStepForm.action || !editStepForm.expectedResult) {
+    if (!selectedTestCaseId) return;
+    if (!editStepForm.action.trim() || !editStepForm.expectedResult.trim()) {
       return toast.error("Fields cannot be empty");
     }
 
@@ -237,14 +328,17 @@ export default function TestCaseManager({ selected }: any) {
 
       if (!res.ok) throw new Error();
 
+      toast.success("Step updated");
       setEditingStepId(null);
-      fetchSteps(selectedTestCaseId!);
+      await fetchSteps(selectedTestCaseId);
     } catch {
       toast.error("Update step failed");
     }
   };
 
   const deleteStep = async (id: string) => {
+    if (!selectedTestCaseId) return;
+
     try {
       const res = await fetch(`${TESTSTEP_API}('${id}')`, {
         method: "DELETE",
@@ -252,374 +346,438 @@ export default function TestCaseManager({ selected }: any) {
 
       if (!res.ok) throw new Error();
 
-      fetchSteps(selectedTestCaseId!);
+      toast.success("Step removed");
+      await fetchSteps(selectedTestCaseId);
     } catch {
       toast.error("Delete step failed");
     }
   };
 
-  const resetForm = () => {
-    setForm({
-      title: "",
-      preconditions: "",
-      priority: "Medium",
-    });
-  };
-
-  if (!selected) return <div className="p-8">Select folder</div>;
+  if (!selected) {
+    return (
+      <Card className="flex h-full min-h-[480px] items-center justify-center">
+        <CardContent className="text-center">
+          <ClipboardList className="mx-auto size-8 text-slate-400" />
+          <h2 className="mt-4 text-lg font-semibold">Select a folder</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Choose a folder to view test cases and steps.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="p-8 space-y-6">
-      {/* HEADER */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Test Cases</h2>
+    <>
+      <div
+        className={cn(
+          "grid h-full gap-4",
+          hasActiveCase ? "xl:grid-cols-[360px_minmax(0,1fr)]" : "xl:grid-cols-[minmax(0,1fr)]",
+        )}
+      >
+        <Card className="h-[calc(100vh-15rem)]">
+          <CardHeader className="space-y-3 border-b pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Test Cases</CardTitle>
+                <CardDescription>{selectedPath.map((folder) => folder.name).join(" / ")}</CardDescription>
+              </div>
 
-        <button
-          onClick={() => {
-            resetForm();
-            setEditingTestCase(null);
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
-        >
-          <Plus size={16} /> New
-        </button>
-      </div>
+              <Button size="sm" onClick={openCreateDialog}>
+                <Plus className="size-4" />
+                New
+              </Button>
+            </div>
 
-      {/* SEARCH + FILTER */}
-      <div className="flex gap-4">
-        <input
-          placeholder="Search..."
-          className="input"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search test cases"
+                  className="pl-9"
+                />
+              </div>
 
-        <select
-          className="input w-40"
-          value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value)}
-        >
-          <option>All</option>
-          <option>Low</option>
-          <option>Medium</option>
-          <option>High</option>
-        </select>
-      </div>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
 
-      {/* TABLE */}
-      <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="p-4 text-left">Title</th>
-              <th className="p-4">Preconditions</th>
-              <th className="p-4">Priority</th>
-              <th className="p-4 text-right">Actions</th>
-            </tr>
-          </thead>
+          <CardContent className="h-[calc(100%-8.5rem)] overflow-y-auto p-4">
+            {loading ? (
+              <div className="flex items-center justify-center py-10 text-sm text-slate-500">
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Loading test cases...
+              </div>
+            ) : filteredCases.length ? (
+              <div className="space-y-2">
+                {filteredCases.map((testCase) => (
+                  <button
+                    key={testCase.ID}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTestCaseId((current) =>
+                        current === testCase.ID ? null : testCase.ID,
+                      );
+                      setEditingStepId(null);
+                      setShowStepForm(false);
+                    }}
+                    className={cn(
+                      "w-full rounded-md border p-3 text-left",
+                      selectedTestCase?.ID === testCase.ID
+                        ? "border-slate-900 bg-slate-50"
+                        : "hover:bg-slate-50",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{testCase.title}</p>
+                        <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                          {testCase.preconditions || "No preconditions"}
+                        </p>
+                      </div>
 
-          <tbody>
-            {filtered.map((tc:any) => (
-              <tr
-                key={tc.ID}
-                onClick={() => {
-                  setSelectedTestCaseId(tc.ID);
-                  fetchSteps(tc.ID);
-                }}
-                className="border-t hover:bg-gray-50 group cursor-pointer"
-              >
-                <td className="p-4">{tc.title}</td>
-                <td className="p-4">{tc.preconditions || "-"}</td>
-                <td className="p-4">{tc.priority}</td>
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={cn(
+                            "rounded px-2 py-1 text-xs font-medium",
+                            priorityTone[testCase.priority] || priorityTone.Medium,
+                          )}
+                        >
+                          {testCase.priority}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEditDialog(testCase);
+                          }}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="text-rose-600 hover:text-rose-700"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDeleteId(testCase.ID);
+                            setShowDeleteDialog(true);
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </button>
+                ))}
 
-                <td className="p-4 text-right">
-                  <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingTestCase(tc);
-                        setForm(tc);
-                        setShowModal(true);
-                      }}
-                    >
-                      <Pencil size={16} />
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteId(tc.ID);
-                        setShowDeleteModal(true);
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                {!hasActiveCase && (
+                  <div className="rounded-md border border-dashed bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                    Click any test case to open its steps and details.
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-md border border-dashed p-4 text-sm text-slate-500">
+                No test cases found.
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {!selectedTestCaseId ? (
-        <div className="bg-white border rounded-xl p-10 text-center text-gray-500 shadow-sm">
-          Select a test case to view steps
-        </div>
-      ) : (
-        <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-          {/* HEADER */}
-          <div className="flex justify-between items-center p-4 border-b bg-gray-50">
-            <h3 className="font-semibold text-lg">Test Steps</h3>
+        {selectedTestCase && (
+          <Card className="h-[calc(100vh-15rem)]">
+          <CardHeader className="space-y-3 border-b pb-4">
+              <>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-base">{selectedTestCase.title}</CardTitle>
+                    <CardDescription className="mt-1">
+                      {selectedTestCase.preconditions || "No preconditions"}
+                    </CardDescription>
+                  </div>
 
-            <button
-              onClick={() => setShowStepForm(!showStepForm)}
-              className="flex items-center gap-2 text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700"
-            >
-              <Plus size={14} /> Add Step
-            </button>
-          </div>
-
-          {/* ADD STEP FORM */}
-          {showStepForm && (
-            <div className="p-4 border-b bg-gray-50">
-              <div className="border rounded-lg p-4 bg-white shadow-sm">
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    className="input focus:ring-2 focus:ring-blue-500 border-gray-300"
-                    placeholder="Action"
-                    value={stepForm.action}
-                    onChange={(e) =>
-                      setStepForm({ ...stepForm, action: e.target.value })
-                    }
-                  />
-
-                  <input
-                    className="input focus:ring-2 focus:ring-blue-500 border-gray-300"
-                    placeholder="Expected Result"
-                    value={stepForm.expectedResult}
-                    onChange={(e) =>
-                      setStepForm({
-                        ...stepForm,
-                        expectedResult: e.target.value,
-                      })
-                    }
-                  />
-
-                  <div className="col-span-2 flex justify-end gap-2 pt-2 border-t">
-                    <button
-                      onClick={() => setShowStepForm(false)}
-                      className="px-3 py-1 rounded border hover:bg-gray-100 transition"
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowStepForm((value) => !value)}
                     >
-                      Cancel
-                    </button>
-
-                    <button
-                      onClick={async () => {
-                        await addStep();
+                      <Plus className="size-4" />
+                      Add Step
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => {
+                        setSelectedTestCaseId(null);
                         setShowStepForm(false);
+                        setEditingStepId(null);
                       }}
-                      className="btn-primary flex items-center gap-1 shadow hover:scale-[1.02] transition"
                     >
-                      <Check size={14} /> Save
-                    </button>
+                      <X className="size-4" />
+                    </Button>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
 
-          {/* TABLE */}
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-              <tr>
-                <th className="p-3 w-12 text-left">#</th>
-                <th className="p-3 text-center">Action</th>
-                <th className="p-3 text-center">Expected Result</th>
-                <th className="p-3 text-right w-24">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {stepsLoading ? (
-                <tr>
-                  <td colSpan={4} className="text-left p-6">
-                    <Loader2 className="animate-spin mx-auto" />
-                  </td>
-                </tr>
-              ) : steps.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center p-6 text-gray-500">
-                    No steps yet
-                  </td>
-                </tr>
-              ) : (
-                steps.map((s) => (
-                  <tr
-                    key={s.ID}
-                    className="border-t hover:bg-gray-50 group transition"
+                <div className="flex gap-2 text-sm text-slate-600">
+                  <span
+                    className={cn(
+                      "rounded px-2 py-1 font-medium",
+                      priorityTone[selectedTestCase.priority] || priorityTone.Medium,
+                    )}
                   >
-                    {/* STEP NUMBER */}
-                    <td className="p-3 text-gray-500">{s.stepNumber}</td>
+                    {selectedTestCase.priority}
+                  </span>
+                  <span className="rounded border px-2 py-1">{steps.length} steps</span>
+                </div>
+              </>
+          </CardHeader>
 
-                    {/* ACTION */}
-                    <td className="p-3">
-                      {editingStepId === s.ID ? (
-                        <input
-                          className="input"
-                          value={editStepForm.action}
-                          onChange={(e) =>
-                            setEditStepForm({
-                              ...editStepForm,
-                              action: e.target.value,
-                            })
-                          }
-                        />
-                      ) : (
-                        <span className="text-gray-800">{s.action}</span>
-                      )}
-                    </td>
+          <CardContent className="flex h-[calc(100%-7rem)] flex-col gap-4 overflow-hidden p-4">
+            {selectedTestCase && showStepForm && (
+              <div className="space-y-3 rounded-md border bg-slate-50 p-3">
+                <Input
+                  value={stepForm.action}
+                  onChange={(event) =>
+                    setStepForm((value) => ({ ...value, action: event.target.value }))
+                  }
+                  placeholder="Action"
+                />
+                <Textarea
+                  value={stepForm.expectedResult}
+                  onChange={(event) =>
+                    setStepForm((value) => ({
+                      ...value,
+                      expectedResult: event.target.value,
+                    }))
+                  }
+                  placeholder="Expected result"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowStepForm(false);
+                      setStepForm(defaultStepForm);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={() => void addStep()}>
+                    <Check className="size-4" />
+                    Save
+                  </Button>
+                </div>
+              </div>
+            )}
 
-                    {/* EXPECTED */}
-                    <td className="p-3">
-                      {editingStepId === s.ID ? (
-                        <input
-                          className="input"
-                          value={editStepForm.expectedResult}
-                          onChange={(e) =>
-                            setEditStepForm({
-                              ...editStepForm,
-                              expectedResult: e.target.value,
-                            })
-                          }
-                        />
-                      ) : (
-                        <span className="text-gray-600">
-                          {s.expectedResult}
+            {stepsLoading ? (
+              <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Loading steps...
+              </div>
+            ) : steps.length ? (
+              <div className="min-h-0 space-y-3 overflow-y-auto">
+                {steps.map((step) => {
+                  const isEditing = editingStepId === step.ID;
+
+                  return (
+                    <div key={step.ID} className="rounded-md border p-3">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium text-slate-600">
+                          Step {step.stepNumber}
                         </span>
-                      )}
-                    </td>
 
-                    {/* ACTIONS */}
-                    <td className="p-3 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
-                        {editingStepId === s.ID ? (
-                          <>
-                            <button onClick={() => updateStep(s.ID)}>
-                              <Check size={16} />
-                            </button>
-                            <button onClick={() => setEditingStepId(null)}>
-                              <X size={16} />
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setEditingStepId(s.ID);
-                              setEditStepForm({
-                                action: s.action,
-                                expectedResult: s.expectedResult,
-                              });
-                            }}
+                        <div className="flex gap-1">
+                          {isEditing ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="icon-sm"
+                                onClick={() => {
+                                  setEditingStepId(null);
+                                  setEditStepForm(defaultStepForm);
+                                }}
+                              >
+                                <X className="size-4" />
+                              </Button>
+                              <Button size="icon-sm" onClick={() => void updateStep(step.ID)}>
+                                <Check className="size-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => {
+                                setEditingStepId(step.ID);
+                                setEditStepForm({
+                                  action: step.action,
+                                  expectedResult: step.expectedResult,
+                                });
+                              }}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                          )}
+
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-rose-600 hover:text-rose-700"
+                            onClick={() => void deleteStep(step.ID)}
                           >
-                            <Pencil size={16} />
-                          </button>
-                        )}
-
-                        <button onClick={() => deleteStep(s.ID)}>
-                          <Trash2 size={16} />
-                        </button>
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
 
-      {/* MODALS */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-xl w-full max-w-lg">
-            <h3 className="font-semibold mb-4">
-              {editingTestCase ? "Edit" : "Create"}
-            </h3>
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        <div>
+                          <p className="mb-1 text-xs font-medium uppercase text-slate-400">Action</p>
+                          {isEditing ? (
+                            <Textarea
+                              value={editStepForm.action}
+                              onChange={(event) =>
+                                setEditStepForm((value) => ({
+                                  ...value,
+                                  action: event.target.value,
+                                }))
+                              }
+                            />
+                          ) : (
+                            <p className="text-sm text-slate-700">{step.action}</p>
+                          )}
+                        </div>
 
-            <input
-              className="input"
-              placeholder="Title"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
+                        <div>
+                          <p className="mb-1 text-xs font-medium uppercase text-slate-400">
+                            Expected Result
+                          </p>
+                          {isEditing ? (
+                            <Textarea
+                              value={editStepForm.expectedResult}
+                              onChange={(event) =>
+                                setEditStepForm((value) => ({
+                                  ...value,
+                                  expectedResult: event.target.value,
+                                }))
+                              }
+                            />
+                          ) : (
+                            <p className="text-sm text-slate-700">{step.expectedResult}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                No steps yet.
+              </div>
+            )}
+          </CardContent>
+          </Card>
+        )}
+      </div>
 
-            <textarea
-              className="input mt-3"
-              placeholder="Preconditions"
-              value={form.preconditions}
-              onChange={(e) =>
-                setForm({ ...form, preconditions: e.target.value })
-              }
-            />
+      <Dialog open={showCaseDialog} onOpenChange={setShowCaseDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingTestCase ? "Edit test case" : "Create test case"}</DialogTitle>
+            <DialogDescription>Add the basic details for this test case.</DialogDescription>
+          </DialogHeader>
 
-            <select
-              className="input mt-3"
-              value={form.priority}
-              onChange={(e) => setForm({ ...form, priority: e.target.value })}
-            >
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-            </select>
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Title</label>
+              <Input
+                value={caseForm.title}
+                onChange={(event) =>
+                  setCaseForm((value) => ({ ...value, title: event.target.value }))
+                }
+                placeholder="Enter test case title"
+              />
+            </div>
 
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setShowModal(false)}>Cancel</button>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Preconditions</label>
+              <Textarea
+                value={caseForm.preconditions}
+                onChange={(event) =>
+                  setCaseForm((value) => ({
+                    ...value,
+                    preconditions: event.target.value,
+                  }))
+                }
+                placeholder="Enter preconditions"
+              />
+            </div>
 
-              <button
-                onClick={editingTestCase ? handleUpdate : handleCreate}
-                className="btn-primary"
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Priority</label>
+              <Select
+                value={caseForm.priority}
+                onValueChange={(value) =>
+                  setCaseForm((current) => ({ ...current, priority: value }))
+                }
               >
-                Save
-              </button>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </div>
-      )}
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-xl w-80">
-            <h3 className="font-semibold mb-3">Delete Test Case?</h3>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCaseDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void (editingTestCase ? handleUpdate() : handleCreate())}>
+              {editingTestCase ? "Save" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowDeleteModal(false)}>Cancel</button>
-              <button
-                onClick={handleDelete}
-                className="bg-red-600 text-white px-3 py-1 rounded"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete test case?</DialogTitle>
+            <DialogDescription>This action cannot be undone.</DialogDescription>
+          </DialogHeader>
 
-      <style>{`
-        .input {
-          width: 100%;
-          border: 1px solid #e5e7eb;
-          padding: 10px;
-          border-radius: 8px;
-        }
-        .btn-primary {
-          background: #2563eb;
-          color: white;
-          padding: 8px 12px;
-          border-radius: 8px;
-        }
-      `}</style>
-    </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => void handleDelete()}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

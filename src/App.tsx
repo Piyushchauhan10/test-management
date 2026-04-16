@@ -33,6 +33,7 @@ import DefectsList from "./pages/protected/defects/DefectsList";
 import CreateDefect from "./pages/protected/defects/CreateDefect";
 import EditDefect from "./pages/protected/defects/EditDefect";
 import TestLab from "./pages/protected/testlab/testlab";
+import DataGrid from "./components/grid/DataGrid";
 
 function App() {
   const location = useLocation();
@@ -106,6 +107,7 @@ function App() {
           path: "defects/:defectId/edit",
           element: <EditDefect />,
         },
+        { path: "datagrid", element: <DataGrid/> },
 
         { path: "teams", element: <TeamList /> },
         { path: "teams/create", element: <CreateTeam /> },
