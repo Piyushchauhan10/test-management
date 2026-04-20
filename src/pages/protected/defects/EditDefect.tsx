@@ -1,7 +1,8 @@
 import DefectForm from "@/components/projects/DefectForm"
+import DefectComments from "@/components/projects/DefectComments"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { useParams, Link } from "react-router-dom"
+import { Link, useParams } from "react-router-dom"
 import { useEffect, useState } from "react"
 import useHttp from "@/hooks/use-http"
 
@@ -11,6 +12,23 @@ type Defect = {
   description: string
   severity: string
   status: string
+  assignedTo_ID?: string | null
+  detectedCycle_ID?: string | null
+  targetCycle_ID?: string | null
+  assignedTo?: {
+    ID: string
+    username: string
+  } | null
+  targetCycle?: {
+    ID: string
+    project_ID: string
+    sprint_ID: string
+  } | null
+  detectedCycle?: {
+    ID: string
+    project_ID: string
+    sprint_ID: string
+  } | null
 }
 
 const EditDefect = () => {
@@ -23,7 +41,7 @@ const EditDefect = () => {
   const getDefect = async () => {
     try {
       const res = await http.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Defects('${defectId}')`
+        `${import.meta.env.VITE_BACKEND_API_URL}/Defects('${defectId}')?$expand=assignedTo,targetCycle,detectedCycle`
       )
 
       const data = res?.data
@@ -52,7 +70,10 @@ const EditDefect = () => {
       <CardContent>
         {loading && <p>Loading...</p>}
         {!loading && defect && (
-          <DefectForm update={true} data={defect} />
+          <div className="space-y-8">
+            <DefectForm update={true} data={defect} />
+            <DefectComments defectId={defect.ID} />
+          </div>
         )}
       </CardContent>
     </Card>

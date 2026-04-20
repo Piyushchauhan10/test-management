@@ -53,20 +53,34 @@ type Defect = {
   description: string
   severity: string
   status: string
+  assignedTo_ID?: string | null
+  targetCycle_ID?: string | null
+  assignedTo?: {
+    ID: string
+    username: string
+  } | null
+  targetCycle?: {
+    ID: string
+    name: string
+    project?: {
+      ID: string
+      name: string
+    } | null
+    sprint?: {
+      ID: string
+      name: string
+    } | null
+  } | null
 }
 
-const getColumns = (
-  onDelete: (id: string) => void
-): ColumnDef<Defect>[] => [
+const getColumns = (onDelete: (id: string) => void): ColumnDef<Defect>[] => [
   {
     accessorKey: "title",
     header: ({ column }) => (
       <Button
         variant="ghost"
         className="px-0"
-        onClick={() =>
-          column.toggleSorting(column.getIsSorted() === "asc")
-        }
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         Title <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
@@ -79,6 +93,26 @@ const getColumns = (
   {
     accessorKey: "status",
     header: "Status",
+  },
+  {
+    id: "project",
+    header: "Project",
+    accessorFn: (row) => row.targetCycle?.project?.name ?? "N/A",
+  },
+  {
+    id: "sprint",
+    header: "Sprint",
+    accessorFn: (row) => row.targetCycle?.sprint?.name ?? "N/A",
+  },
+  {
+    id: "testCycle",
+    header: "Test Cycle",
+    accessorFn: (row) => row.targetCycle?.name ?? "N/A",
+  },
+  {
+    id: "assignedTo",
+    header: "Assigned To",
+    accessorFn: (row) => row.assignedTo?.username ?? "Unassigned",
   },
   {
     id: "actions",
@@ -94,9 +128,13 @@ const getColumns = (
 
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild>
-            <Link to={`/admin/defects/${row.original.ID}/edit`}>
-              Edit
+            <Link to={`/admin/defects/${row.original.ID}/comments`}>
+              Comments
             </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>
+            <Link to={`/admin/defects/${row.original.ID}/edit`}>Edit</Link>
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -118,21 +156,16 @@ export default function DefectsList() {
   const [loading, setLoading] = useState(true)
 
   const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] =
-    useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] =
-    useState<VisibilityState>({})
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
 
   const fetchDefects = async () => {
     try {
       const res = await http.sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Defects`
+        `${import.meta.env.VITE_BACKEND_API_URL}/Defects?$expand=assignedTo,targetCycle($expand=project,sprint)`
       )
 
-      const data =
-        res?.data?.value ||
-        res?.data ||
-        []
+      const data = res?.data?.value || res?.data || []
 
       setDefects(data)
     } catch (error) {
@@ -153,9 +186,7 @@ export default function DefectsList() {
         { method: "DELETE" }
       )
 
-      setDefects((prev) =>
-        prev.filter((d) => d.ID !== id)
-      )
+      setDefects((prev) => prev.filter((d) => d.ID !== id))
     } catch (error) {
       console.error("Delete failed", error)
     }
@@ -199,9 +230,7 @@ export default function DefectsList() {
           <h2 className="text-xl font-semibold">Defects</h2>
 
           <Button asChild>
-            <Link to="/admin/defects/create">
-              Add Defect
-            </Link>
+            <Link to="/admin/defects/create">Add Defect</Link>
           </Button>
         </div>
       </CardHeader>
@@ -210,15 +239,9 @@ export default function DefectsList() {
         <div className="flex items-center py-4 gap-4">
           <Input
             placeholder="Filter title..."
-            value={
-              (table
-                .getColumn("title")
-                ?.getFilterValue() as string) ?? ""
-            }
+            value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
             onChange={(e) =>
-              table
-                .getColumn("title")
-                ?.setFilterValue(e.target.value)
+              table.getColumn("title")?.setFilterValue(e.target.value)
             }
             className="max-w-sm"
           />
@@ -281,7 +304,7 @@ export default function DefectsList() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center">
+                <TableCell colSpan={8} className="text-center">
                   No results.
                 </TableCell>
               </TableRow>

@@ -32,6 +32,7 @@ import CreateRequirement from "./pages/requirements/CreateRequirements";
 import DefectsList from "./pages/protected/defects/DefectsList";
 import CreateDefect from "./pages/protected/defects/CreateDefect";
 import EditDefect from "./pages/protected/defects/EditDefect";
+import DefectCommentsPage from "./pages/protected/defects/DefectCommentsPage";
 import TestLab from "./pages/protected/testlab/testlab";
 import DataGrid from "./components/grid/DataGrid";
 
@@ -106,6 +107,10 @@ function App() {
         {
           path: "defects/:defectId/edit",
           element: <EditDefect />,
+        },
+        {
+          path: "defects/:defectId/comments",
+          element: <DefectCommentsPage />,
         },
         { path: "datagrid", element: <DataGrid/> },
 
