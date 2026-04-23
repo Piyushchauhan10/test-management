@@ -76,10 +76,6 @@ export default function RequirementForm({ update, data }: Props) {
   const { currentProject } = useContext(ProjectContext);
 
   setValue("project_ID", currentProject || "");
-
-  console.log(data);
-  
-
  
   const fetchSprints = useCallback(async (projectId: string) => {
     try {
