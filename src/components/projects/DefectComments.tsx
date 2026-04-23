@@ -492,7 +492,7 @@ export default function DefectComments({ defectId }: Props) {
 
                 <div className="min-w-0 flex-1 overflow-hidden rounded-xl border bg-card shadow-sm">
                   <div className="flex items-start justify-between gap-3 border-b bg-muted/35 px-4 py-3">
-                    <div className="flex-1">
+                    <div className="flex items-center gap-x-2 justify-between w-full">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                         <span className="font-semibold text-foreground">
                           {comment.user?.username || "Unknown user"}
@@ -578,7 +578,7 @@ export default function DefectComments({ defectId }: Props) {
                     <div className="p-4">
                       <RichTextContent
                         value={comment.description}
-                        className="text-sm text-foreground [&_p:first-child]:mt-0"
+                        className="text-sm text-left [&_p:first-child]:mt-0"
                         plainTextFallback="No content"
                       />
                     </div>
