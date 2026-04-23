@@ -11,6 +11,7 @@ import {
   Folder,
   FolderOpen,
   Loader2,
+  MoreHorizontal,
   Pencil,
   Plus,
   Search,
@@ -29,6 +30,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -37,6 +44,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -599,9 +614,9 @@ export default function TestLibrary() {
                 Test Management
               </p>
               <h1 className="mt-1 text-2xl font-semibold tracking-tight">Test Library</h1>
-              <p className="mt-1 pl-5 text-sm text-slate-500">
+              {/* <p className="mt-1 pl-5 text-sm text-slate-500">
                 Clean three-column flow: folders, test cases, and test steps.
-              </p>
+              </p> */}
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
@@ -730,24 +745,14 @@ export default function TestLibrary() {
                     <div className="rounded-xl border bg-white px-3 py-2 shadow-sm">
                       Depth: {selectedPath.length || 0}
                     </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3 border-b border-slate-200/80 px-4 py-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-900">Case Library</div>
-                      <div className="truncate text-xs text-slate-500">
-                        {selectedPath.map((folder) => folder.name).join(" / ") || "No folder selected"}
-                      </div>
-                    </div>
-
                     <Button size="sm" onClick={openCreateDialog} disabled={!selectedFolder}>
                       <Plus className="size-4" />
                       New
                     </Button>
                   </div>
+                </div>
 
+                <div className="space-y-3 border-b border-slate-200/80 px-4 py-4">
                   <div className="flex flex-col gap-2 lg:flex-row">
                     <div className="relative flex-1">
                       <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
@@ -791,74 +796,101 @@ export default function TestLibrary() {
                       Loading test cases...
                     </div>
                   ) : filteredCases.length ? (
-                    <div className="space-y-2">
-                      {filteredCases.map((testCase) => (
-                        <button
-                          key={testCase.ID}
-                          type="button"
-                          onClick={() => {
-                            setSelectedTestCaseId((current) =>
-                              current === testCase.ID ? null : testCase.ID,
-                            );
-                            setEditingStepId(null);
-                            setShowStepForm(false);
-                          }}
-                          className={cn(
-                            "w-full rounded-2xl border p-3 text-left transition",
-                            selectedTestCase?.ID === testCase.ID
-                              ? "border-slate-900 bg-slate-50 shadow-sm"
-                              : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
-                          )}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate font-medium">{testCase.title}</p>
-                              <p className="mt-1 line-clamp-2 text-sm text-slate-500">
-                                {testCase.preconditions || "No preconditions"}
-                              </p>
-                            </div>
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                      <Table className="table-fixed">
+                        <TableHeader className="bg-slate-50/80">
+                          <TableRow className="hover:bg-slate-50/80">
+                            <TableHead className="w-[38%] px-4">Title</TableHead>
+                            <TableHead className="w-[37%] px-4">Preconditions</TableHead>
+                            <TableHead className="w-[13%] px-4">Priority</TableHead>
+                            <TableHead className="w-[12%] px-4 text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredCases.map((testCase) => (
+                            <TableRow
+                              key={testCase.ID}
+                              onClick={() => {
+                                setSelectedTestCaseId((current) =>
+                                  current === testCase.ID ? null : testCase.ID,
+                                );
+                                setEditingStepId(null);
+                                setShowStepForm(false);
+                              }}
+                              className={cn(
+                                "cursor-pointer",
+                                selectedTestCase?.ID === testCase.ID
+                                  ? "bg-slate-100 hover:bg-slate-100"
+                                  : "hover:bg-slate-50",
+                              )}
+                            >
+                              <TableCell className="px-4 py-3 align-top">
+                                <p className="truncate font-medium text-slate-900 ">
+                                  {testCase.title}
+                                </p>
+                              </TableCell>
+                              <TableCell className="px-4 py-3 align-top">
+                                <p className="line-clamp-2 whitespace-normal text-sm text-slate-500">
+                                  {testCase.preconditions || "No preconditions"}
+                                </p>
+                              </TableCell>
+                              <TableCell className="px-4 py-3 align-top">
+                                <span
+                                  className={cn(
+                                    "inline-flex rounded px-2 py-1 text-xs font-medium",
+                                    priorityTone[testCase.priority] || priorityTone.Medium,
+                                  )}
+                                >
+                                  {testCase.priority}
+                                </span>
+                              </TableCell>
+                              <TableCell className="px-4 py-3 align-top">
+                                <div className="flex justify-end">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={(event) => event.stopPropagation()}
+                                      >
+                                        <MoreHorizontal className="size-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-36 rounded-xl">
+                                      <DropdownMenuItem
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          openEditDialog(testCase);
+                                        }}
+                                      >
+                                        <Pencil className="size-4" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        className="text-rose-600 focus:text-rose-700"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          setDeleteCaseId(testCase.ID);
+                                          setShowDeleteDialog(true);
+                                        }}
+                                      >
+                                        <Trash2 className="size-4" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
 
-                            <div className="flex items-center gap-1">
-                              <span
-                                className={cn(
-                                  "rounded px-2 py-1 text-xs font-medium",
-                                  priorityTone[testCase.priority] || priorityTone.Medium,
-                                )}
-                              >
-                                {testCase.priority}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  openEditDialog(testCase);
-                                }}
-                              >
-                                <Pencil className="size-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="text-rose-600 hover:text-rose-700"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setDeleteCaseId(testCase.ID);
-                                  setShowDeleteDialog(true);
-                                }}
-                              >
-                                <Trash2 className="size-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-
-                      {!selectedTestCase && (
-                        <div className="rounded-2xl border border-dashed bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                          Click any test case to open its test steps in the third column.
+                      {/* {!selectedTestCase && (
+                        <div className="border-t border-dashed bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                          Click any row to open its test steps in the third column.
                         </div>
-                      )}
+                      )} */}
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-dashed p-4 text-sm text-slate-500">
@@ -970,103 +1002,124 @@ export default function TestLibrary() {
                             Loading steps...
                           </div>
                         ) : steps.length ? (
-                          <div className="min-h-0 space-y-3 overflow-y-auto pr-1">
-                            {steps.map((step) => {
-                              const isEditing = editingStepId === step.ID;
+                          <div className="min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white">
+                            <Table className="table-fixed">
+                              <TableHeader className="bg-slate-50/80">
+                                <TableRow className="hover:bg-slate-50/80">
+                                  <TableHead className="w-[12%] px-4">Step</TableHead>
+                                  <TableHead className="w-[38%] px-4">Action</TableHead>
+                                  <TableHead className="w-[38%] px-4">Expected Result</TableHead>
+                                  <TableHead className="w-[12%] px-4 text-right">Actions</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {steps.map((step) => {
+                                  const isEditing = editingStepId === step.ID;
 
-                              return (
-                                <div key={step.ID} className="rounded-2xl border border-slate-200 p-3">
-                                  <div className="mb-3 flex items-center justify-between gap-3">
-                                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                                      Step {step.stepNumber}
-                                    </span>
-
-                                    <div className="flex gap-1">
-                                      {isEditing ? (
-                                        <>
-                                          <Button
-                                            variant="outline"
-                                            size="icon-sm"
-                                            onClick={() => {
-                                              setEditingStepId(null);
-                                              setEditStepForm(defaultStepForm);
-                                            }}
-                                          >
-                                            <X className="size-4" />
-                                          </Button>
-                                          <Button size="icon-sm" onClick={() => void updateStep(step.ID)}>
-                                            <Check className="size-4" />
-                                          </Button>
-                                        </>
-                                      ) : (
-                                        <Button
-                                          variant="ghost"
-                                          size="icon-sm"
-                                          onClick={() => {
-                                            setEditingStepId(step.ID);
-                                            setEditStepForm({
-                                              action: step.action,
-                                              expectedResult: step.expectedResult,
-                                            });
-                                          }}
-                                        >
-                                          <Pencil className="size-4" />
-                                        </Button>
-                                      )}
-
-                                      <Button
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        className="text-rose-600 hover:text-rose-700"
-                                        onClick={() => void deleteStep(step.ID)}
-                                      >
-                                        <Trash2 className="size-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-
-                                  <div className="grid gap-3 lg:grid-cols-2">
-                                    <div className="rounded-xl bg-slate-50 p-3">
-                                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                                        Action
-                                      </p>
-                                      {isEditing ? (
-                                        <Textarea
-                                          value={editStepForm.action}
-                                          onChange={(event) =>
-                                            setEditStepForm((value) => ({
-                                              ...value,
-                                              action: event.target.value,
-                                            }))
-                                          }
-                                        />
-                                      ) : (
-                                        <p className="text-sm text-slate-700">{step.action}</p>
-                                      )}
-                                    </div>
-
-                                    <div className="rounded-xl bg-slate-50 p-3">
-                                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                                        Expected Result
-                                      </p>
-                                      {isEditing ? (
-                                        <Textarea
-                                          value={editStepForm.expectedResult}
-                                          onChange={(event) =>
-                                            setEditStepForm((value) => ({
-                                              ...value,
-                                              expectedResult: event.target.value,
-                                            }))
-                                          }
-                                        />
-                                      ) : (
-                                        <p className="text-sm text-slate-700">{step.expectedResult}</p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                  return (
+                                    <TableRow key={step.ID} className="align-top hover:bg-slate-50">
+                                      <TableCell className="px-4 py-3 align-top">
+                                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                           {step.stepNumber}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="px-4 py-3 align-top">
+                                        {isEditing ? (
+                                          <Textarea
+                                            value={editStepForm.action}
+                                            onChange={(event) =>
+                                              setEditStepForm((value) => ({
+                                                ...value,
+                                                action: event.target.value,
+                                              }))
+                                            }
+                                            className="min-h-24 whitespace-normal"
+                                          />
+                                        ) : (
+                                          <p className="whitespace-normal text-sm text-slate-700">
+                                            {step.action}
+                                          </p>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="px-4 py-3 align-top">
+                                        {isEditing ? (
+                                          <Textarea
+                                            value={editStepForm.expectedResult}
+                                            onChange={(event) =>
+                                              setEditStepForm((value) => ({
+                                                ...value,
+                                                expectedResult: event.target.value,
+                                              }))
+                                            }
+                                            className="min-h-24 whitespace-normal"
+                                          />
+                                        ) : (
+                                          <p className="whitespace-normal text-sm text-slate-700">
+                                            {step.expectedResult}
+                                          </p>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="px-4 py-3 align-top">
+                                        <div className="flex justify-end gap-1">
+                                          {isEditing ? (
+                                            <>
+                                              <Button
+                                                variant="outline"
+                                                size="icon-sm"
+                                                onClick={() => {
+                                                  setEditingStepId(null);
+                                                  setEditStepForm(defaultStepForm);
+                                                }}
+                                              >
+                                                <X className="size-4" />
+                                              </Button>
+                                              <Button
+                                                size="icon-sm"
+                                                onClick={() => void updateStep(step.ID)}
+                                              >
+                                                <Check className="size-4" />
+                                              </Button>
+                                            </>
+                                          ) : (
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon-sm">
+                                                  <MoreHorizontal className="size-4" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent
+                                                align="end"
+                                                className="w-36 rounded-xl"
+                                              >
+                                                <DropdownMenuItem
+                                                  onClick={() => {
+                                                    setEditingStepId(step.ID);
+                                                    setEditStepForm({
+                                                      action: step.action,
+                                                      expectedResult: step.expectedResult,
+                                                    });
+                                                  }}
+                                                >
+                                                  <Pencil className="size-4" />
+                                                  Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                  className="text-rose-600 focus:text-rose-700"
+                                                  onClick={() => void deleteStep(step.ID)}
+                                                >
+                                                  <Trash2 className="size-4" />
+                                                  Delete
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          )}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
                           </div>
                         ) : (
                           <div className="flex h-full items-center justify-center rounded-2xl border border-dashed bg-slate-50 text-sm text-slate-500">
