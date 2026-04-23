@@ -9,7 +9,6 @@ import {
   FlaskConical,
   Loader2,
   Search,
-  Target,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -39,15 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const BASE_URL =
-  import.meta.env.VITE_BACKEND_API_URL ??
-  "http://72.61.244.79:4004/odata/v4/test-management";
-
-const FOLDER_API = `${BASE_URL}/Folders`;
-const PROJECT_API = `${BASE_URL}/Projects`;
-const SPRINT_API = `${BASE_URL}/Sprints`;
-const CYCLE_API = `${BASE_URL}/TestCycles`;
-const TESTCASE_API = `${BASE_URL}/TestCases`;
+const TESTLAB_STORAGE_KEY = "testlab_local_data_v1";
 
 type FolderNode = {
   ID: string;
@@ -65,11 +56,13 @@ type Project = {
 type Sprint = {
   ID: string;
   name: string;
+  project_ID: string;
 };
 
 type TestCycle = {
   ID: string;
   name: string;
+  sprint_ID: string;
 };
 
 type TestCase = {
@@ -77,6 +70,138 @@ type TestCase = {
   title: string;
   priority?: string;
   preconditions?: string;
+  folder_ID: string;
+};
+
+type TestLabStore = {
+  folders: FolderNode[];
+  projects: Project[];
+  sprints: Sprint[];
+  cycles: TestCycle[];
+  testCases: TestCase[];
+};
+
+const defaultTestLabStore: TestLabStore = {
+  projects: [
+    { ID: "project-1", name: "Website Revamp" },
+    { ID: "project-2", name: "Mobile App QA" },
+  ],
+  sprints: [
+    { ID: "sprint-1", name: "Sprint 1", project_ID: "project-1" },
+    { ID: "sprint-2", name: "Sprint 2", project_ID: "project-1" },
+    { ID: "sprint-3", name: "Regression Sprint", project_ID: "project-2" },
+  ],
+  cycles: [
+    { ID: "cycle-1", name: "Smoke Cycle", sprint_ID: "sprint-1" },
+    { ID: "cycle-2", name: "Regression Cycle", sprint_ID: "sprint-2" },
+    { ID: "cycle-3", name: "Android Cycle", sprint_ID: "sprint-3" },
+  ],
+  folders: [
+    {
+      ID: "folder-1",
+      name: "Authentication",
+      parentFolder_ID: null,
+      testCycle_ID: "cycle-1",
+    },
+    {
+      ID: "folder-2",
+      name: "Login",
+      parentFolder_ID: "folder-1",
+      testCycle_ID: "cycle-1",
+    },
+    {
+      ID: "folder-3",
+      name: "Forgot Password",
+      parentFolder_ID: "folder-1",
+      testCycle_ID: null,
+    },
+    {
+      ID: "folder-4",
+      name: "Checkout",
+      parentFolder_ID: null,
+      testCycle_ID: "cycle-2",
+    },
+    {
+      ID: "folder-5",
+      name: "Payments",
+      parentFolder_ID: "folder-4",
+      testCycle_ID: "cycle-2",
+    },
+    {
+      ID: "folder-6",
+      name: "Profile",
+      parentFolder_ID: null,
+      testCycle_ID: "cycle-3",
+    },
+  ],
+  testCases: [
+    {
+      ID: "tc-1",
+      title: "User can log in with valid credentials",
+      priority: "High",
+      preconditions: "User account is active",
+      folder_ID: "folder-2",
+    },
+    {
+      ID: "tc-2",
+      title: "User cannot log in with invalid password",
+      priority: "Medium",
+      preconditions: "User account exists",
+      folder_ID: "folder-2",
+    },
+    {
+      ID: "tc-3",
+      title: "Forgot password sends reset email",
+      priority: "High",
+      preconditions: "Email inbox is reachable",
+      folder_ID: "folder-3",
+    },
+    {
+      ID: "tc-4",
+      title: "Card payment completes checkout",
+      priority: "High",
+      preconditions: "Cart contains at least one item",
+      folder_ID: "folder-5",
+    },
+    {
+      ID: "tc-5",
+      title: "Profile page loads saved details",
+      priority: "Low",
+      preconditions: "User is logged in",
+      folder_ID: "folder-6",
+    },
+  ],
+};
+
+const readTestLabStore = (): TestLabStore => {
+  if (typeof window === "undefined") {
+    return defaultTestLabStore;
+  }
+
+  const saved = window.localStorage.getItem(TESTLAB_STORAGE_KEY);
+
+  if (!saved) {
+    window.localStorage.setItem(
+      TESTLAB_STORAGE_KEY,
+      JSON.stringify(defaultTestLabStore),
+    );
+    return defaultTestLabStore;
+  }
+
+  try {
+    return JSON.parse(saved) as TestLabStore;
+  } catch {
+    window.localStorage.setItem(
+      TESTLAB_STORAGE_KEY,
+      JSON.stringify(defaultTestLabStore),
+    );
+    return defaultTestLabStore;
+  }
+};
+
+const writeTestLabStore = (store: TestLabStore) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(TESTLAB_STORAGE_KEY, JSON.stringify(store));
 };
 
 const buildTree = (data: FolderNode[]) => {
@@ -126,7 +251,6 @@ const priorityTone: Record<string, string> = {
 };
 
 export default function TestLab() {
-  const [folders, setFolders] = useState<FolderNode[]>([]);
   const [tree, setTree] = useState<FolderNode[]>([]);
   const [assignedFolders, setAssignedFolders] = useState<FolderNode[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<FolderNode | null>(null);
@@ -153,14 +277,9 @@ export default function TestLab() {
     setTreeLoading(true);
 
     try {
-      const response = await fetch(FOLDER_API);
+      const store = readTestLabStore();
+      const folderData = store.folders || [];
 
-      if (!response.ok) throw new Error();
-
-      const data = await response.json();
-      const folderData = data.value || [];
-
-      setFolders(folderData);
       setTree(buildTree(folderData));
     } catch {
       toast.error("Failed to load folders");
@@ -171,12 +290,8 @@ export default function TestLab() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch(PROJECT_API);
-
-      if (!response.ok) throw new Error();
-
-      const data = await response.json();
-      setProjects(data.value || []);
+      const store = readTestLabStore();
+      setProjects(store.projects || []);
     } catch {
       toast.error("Failed to load projects");
     }
@@ -184,14 +299,10 @@ export default function TestLab() {
 
   const fetchSprints = async (projectId: string) => {
     try {
-      const response = await fetch(
-        `${SPRINT_API}?$filter=project_ID eq '${projectId}'`,
+      const store = readTestLabStore();
+      setSprints(
+        (store.sprints || []).filter((sprint) => sprint.project_ID === projectId),
       );
-
-      if (!response.ok) throw new Error();
-
-      const data = await response.json();
-      setSprints(data.value || []);
     } catch {
       toast.error("Failed to load sprints");
     }
@@ -199,14 +310,10 @@ export default function TestLab() {
 
   const fetchCycles = async (sprintId: string) => {
     try {
-      const response = await fetch(
-        `${CYCLE_API}?$filter=sprint_ID eq '${sprintId}'`,
+      const store = readTestLabStore();
+      setCycles(
+        (store.cycles || []).filter((cycle) => cycle.sprint_ID === sprintId),
       );
-
-      if (!response.ok) throw new Error();
-
-      const data = await response.json();
-      setCycles(data.value || []);
     } catch {
       toast.error("Failed to load test cycles");
     }
@@ -214,14 +321,10 @@ export default function TestLab() {
 
   const fetchAssignedFolders = async (cycleId: string) => {
     try {
-      const response = await fetch(
-        `${FOLDER_API}?$filter=testCycle_ID eq '${cycleId}'`,
+      const store = readTestLabStore();
+      const nextFolders = (store.folders || []).filter(
+        (folder) => folder.testCycle_ID === cycleId,
       );
-
-      if (!response.ok) throw new Error();
-
-      const data = await response.json();
-      const nextFolders = data.value || [];
 
       setAssignedFolders(nextFolders);
 
@@ -232,8 +335,9 @@ export default function TestLab() {
       }
 
       const nextSelected =
-        nextFolders.find((folder: FolderNode) => folder.ID === selectedFolder?.ID) ||
-        nextFolders[0];
+        nextFolders.find(
+          (folder: FolderNode) => folder.ID === selectedFolder?.ID,
+        ) || nextFolders[0];
 
       setSelectedFolder(nextSelected);
       await fetchTestCases(nextSelected);
@@ -246,15 +350,12 @@ export default function TestLab() {
     setTestCaseLoading(true);
 
     try {
-      const response = await fetch(
-        `${TESTCASE_API}?$filter=folder_ID eq '${folder.ID}'`,
+      const store = readTestLabStore();
+      const nextTestCases = (store.testCases || []).filter(
+        (testCase) => testCase.folder_ID === folder.ID,
       );
-
-      if (!response.ok) throw new Error();
-
-      const data = await response.json();
       setSelectedFolder(folder);
-      setTestCases(data.value || []);
+      setTestCases(nextTestCases);
     } catch {
       toast.error("Failed to load test cases");
     } finally {
@@ -328,6 +429,20 @@ export default function TestLab() {
     setDraggingFolderId(folder.ID);
   };
 
+  const handleTreeSelect = (folder: FolderNode) => {
+    const isAssignedToSelectedCycle = assignedFolders.some(
+      (assignedFolder) => assignedFolder.ID === folder.ID,
+    );
+
+    if (isAssignedToSelectedCycle) {
+      void fetchTestCases(folder);
+      return;
+    }
+
+    setSelectedFolder(folder);
+    setTestCases([]);
+  };
+
   const handleAssignFolder = async (folderId: string) => {
     if (!selectedCycle) {
       toast.error("Select a test cycle first");
@@ -337,18 +452,24 @@ export default function TestLab() {
     setAssignmentSaving(true);
 
     try {
-      const response = await fetch(`${FOLDER_API}('${folderId}')`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ testCycle_ID: selectedCycle }),
-      });
+      const store = readTestLabStore();
+      const folderExists = store.folders.some((folder) => folder.ID === folderId);
 
-      if (!response.ok) throw new Error();
+      if (!folderExists) {
+        throw new Error();
+      }
 
-      toast.success("Folder saved to backend");
+      const nextFolders = store.folders.map((folder) =>
+        folder.ID === folderId
+          ? { ...folder, testCycle_ID: selectedCycle }
+          : folder,
+      );
+
+      writeTestLabStore({ ...store, folders: nextFolders });
       await Promise.all([fetchFolders(), fetchAssignedFolders(selectedCycle)]);
+      toast.success("Folder added to the right panel");
     } catch {
-      toast.error("Failed to save folder");
+      toast.error("Failed to assign folder");
     } finally {
       setAssignmentSaving(false);
       setDraggingFolderId(null);
@@ -361,16 +482,14 @@ export default function TestLab() {
     setAssignmentSaving(true);
 
     try {
-      const response = await fetch(`${FOLDER_API}('${folderId}')`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ testCycle_ID: null }),
-      });
+      const store = readTestLabStore();
+      const nextFolders = store.folders.map((folder) =>
+        folder.ID === folderId ? { ...folder, testCycle_ID: null } : folder,
+      );
 
-      if (!response.ok) throw new Error();
-
-      toast.success("Folder removed from cycle");
+      writeTestLabStore({ ...store, folders: nextFolders });
       await Promise.all([fetchFolders(), fetchAssignedFolders(selectedCycle)]);
+      toast.success("Folder removed from the right panel");
     } catch {
       toast.error("Failed to remove folder");
     } finally {
@@ -391,13 +510,6 @@ export default function TestLab() {
     );
   });
 
-  const selectedProjectName =
-    projects.find((project) => project.ID === selectedProject)?.name || "Project";
-  const selectedSprintName =
-    sprints.find((sprint) => sprint.ID === selectedSprint)?.name || "Sprint";
-  const selectedCycleName =
-    cycles.find((cycle) => cycle.ID === selectedCycle)?.name || "Test cycle";
-
   if (pageLoading) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center">
@@ -412,76 +524,6 @@ export default function TestLab() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.14),_transparent_28%),linear-gradient(180deg,_rgba(248,250,252,1)_0%,_rgba(241,245,249,0.85)_100%)] p-4 md:p-6">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <Card className="overflow-hidden border-0 bg-slate-950 text-white shadow-2xl">
-          <CardContent className="grid gap-6 px-6 py-8 md:grid-cols-[1.6fr_1fr]">
-            <div className="space-y-4">
-              
-
-              <div className="space-y-2">
-                <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-                  Test Lab
-                </h1>
-                <p className="max-w-2xl text-sm text-slate-300 md:text-base">
-                  Organize folders, map them to sprint cycles, and review test
-                  cases from one clean control center with backend persistence.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
-              <MetricCard
-                icon={<FolderTree className="size-4 text-sky-300" />}
-                label="Library folders"
-                value={folders.length}
-                tone="bg-white/8"
-              />
-              <MetricCard
-                icon={<Target className="size-4 text-emerald-300" />}
-                label="Assigned folders"
-                value={assignedFolders.length}
-                tone="bg-white/8"
-              />
-              <MetricCard
-                icon={<FlaskConical className="size-4 text-amber-300" />}
-                label="Visible test cases"
-                value={filteredTestCases.length}
-                tone="bg-white/8"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200/70 shadow-sm">
-          <CardHeader className="gap-3">
-            <CardTitle>Workspace Filters</CardTitle>
-            <CardDescription>
-              Pick a project, sprint, and cycle before dropping folders into the
-              execution plan.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
-            <FilterSelect
-              placeholder="Choose project"
-              value={selectedProject}
-              onValueChange={setSelectedProject}
-              options={projects}
-            />
-            <FilterSelect
-              placeholder="Choose sprint"
-              value={selectedSprint}
-              onValueChange={setSelectedSprint}
-              options={sprints}
-              disabled={!selectedProject}
-            />
-            <FilterSelect
-              placeholder="Choose test cycle"
-              value={selectedCycle}
-              onValueChange={setSelectedCycle}
-              options={cycles}
-              disabled={!selectedSprint}
-            />
-          </CardContent>
-        </Card>
 
         <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
           <Card className="border-slate-200/70 shadow-sm">
@@ -489,7 +531,8 @@ export default function TestLab() {
               <div className="space-y-1">
                 <CardTitle>Folder Library</CardTitle>
                 <CardDescription>
-                  Drag a folder into the active cycle to save the assignment.
+                  Select a project, sprint, and cycle, then click an assigned
+                  folder to load its test cases.
                 </CardDescription>
               </div>
 
@@ -522,7 +565,7 @@ export default function TestLab() {
                         activeId={selectedFolder?.ID || null}
                         draggingId={draggingFolderId}
                         onDragStart={handleDragStart}
-                        onSelect={setSelectedFolder}
+                        onSelect={handleTreeSelect}
                       />
                     ))}
                   </div>
@@ -539,29 +582,44 @@ export default function TestLab() {
 
           <div className="flex flex-col gap-6">
             <Card className="border-slate-200/70 shadow-sm">
-              <CardHeader className="gap-4 border-b">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-1">
-                    <CardTitle>Execution Board</CardTitle>
-                    <CardDescription>
-                      {selectedCycle
-                        ? `${selectedProjectName} / ${selectedSprintName} / ${selectedCycleName}`
-                        : "Select a project, sprint, and test cycle to start assigning folders."}
-                    </CardDescription>
-                  </div>
+              <CardHeader className="gap-3">
+                <CardTitle>Workspace Filters</CardTitle>
+                <CardDescription>
+                  Pick a project, sprint, and cycle before dropping folders into
+                  the execution plan.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-3">
+                <FilterSelect
+                  placeholder="Choose project"
+                  value={selectedProject}
+                  onValueChange={setSelectedProject}
+                  options={projects}
+                />
+                <FilterSelect
+                  placeholder="Choose sprint"
+                  value={selectedSprint}
+                  onValueChange={setSelectedSprint}
+                  options={sprints}
+                  disabled={!selectedProject}
+                />
+                <FilterSelect
+                  placeholder="Choose test cycle"
+                  value={selectedCycle}
+                  onValueChange={setSelectedCycle}
+                  options={cycles}
+                  disabled={!selectedSprint}
+                />
+              </CardContent>
+            </Card>
 
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <span className="rounded-full bg-slate-100 px-3 py-1">
-                      Project: {selectedProjectName}
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1">
-                      Sprint: {selectedSprintName}
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1">
-                      Cycle: {selectedCycleName}
-                    </span>
-                  </div>
-                </div>
+            <Card className="border-slate-200/70 shadow-sm">
+              <CardHeader className="gap-3 border-b">
+                <CardTitle>Dropped Folders</CardTitle>
+                <CardDescription>
+                  Drag folders from the left list and drop them here to show
+                  them in this panel.
+                </CardDescription>
               </CardHeader>
 
               <CardContent className="p-6">
@@ -570,7 +628,9 @@ export default function TestLab() {
                   onDrop={(event) => {
                     event.preventDefault();
                     const folderId = event.dataTransfer.getData("text/plain");
-                    if (folderId) handleAssignFolder(folderId);
+                    if (folderId) {
+                      void handleAssignFolder(folderId);
+                    }
                   }}
                   className={`rounded-2xl border border-dashed p-5 transition ${
                     selectedCycle
@@ -585,8 +645,8 @@ export default function TestLab() {
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {selectedCycle
-                          ? "Drag folders from the library and they will be saved to this cycle in the backend."
-                          : "Choose a test cycle first, then drag a folder here to assign it."}
+                          ? "Drop a folder here and it will appear below."
+                          : "Choose a test cycle first, then drag a folder here."}
                       </p>
                     </div>
 
@@ -598,13 +658,13 @@ export default function TestLab() {
                     )}
                   </div>
 
-                  <div className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                  <div className="mt-5 grid gap-3 md:grid-cols-2">
                     {assignedFolders.length ? (
                       assignedFolders.map((folder) => (
                         <button
                           key={folder.ID}
                           type="button"
-                          onClick={() => fetchTestCases(folder)}
+                          onClick={() => void fetchTestCases(folder)}
                           className={`group rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
                             selectedFolder?.ID === folder.ID
                               ? "border-sky-400 ring-2 ring-sky-100"
@@ -621,18 +681,19 @@ export default function TestLab() {
                                   {folder.name}
                                 </p>
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                  Click to load backend test cases
+                                  Click to load test cases
                                 </p>
                               </div>
                             </div>
 
                             <Button
+                              type="button"
                               variant="ghost"
                               size="icon-sm"
                               className="opacity-70 transition group-hover:opacity-100"
                               onClick={(event) => {
                                 event.stopPropagation();
-                                handleUnassignFolder(folder.ID);
+                                void handleUnassignFolder(folder.ID);
                               }}
                             >
                               <Trash2 className="size-4 text-rose-600" />
@@ -641,11 +702,11 @@ export default function TestLab() {
                         </button>
                       ))
                     ) : (
-                      <div className="md:col-span-2 2xl:col-span-3">
+                      <div className="md:col-span-2">
                         <EmptyState
                           icon={<FolderTree className="size-5" />}
-                          title="No folders assigned yet"
-                          description="Your selected cycle is empty. Drag one or more folders into this area to persist them."
+                          title="No folders dropped yet"
+                          description="Pick a folder from the left side and drag it into this drop zone."
                         />
                       </div>
                     )}
@@ -673,7 +734,9 @@ export default function TestLab() {
                     <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                     <Input
                       value={testCaseSearch}
-                      onChange={(event) => setTestCaseSearch(event.target.value)}
+                      onChange={(event) =>
+                        setTestCaseSearch(event.target.value)
+                      }
                       placeholder="Search title, priority, or preconditions"
                       className="pl-9"
                       disabled={!selectedFolder}
@@ -774,26 +837,6 @@ function FilterSelect({
         ))}
       </SelectContent>
     </Select>
-  );
-}
-
-function MetricCard({
-  icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: number;
-  tone: string;
-}) {
-  return (
-    <div className={`rounded-2xl border border-white/10 p-4 ${tone}`}>
-      <div className="mb-3 inline-flex rounded-xl bg-black/20 p-2">{icon}</div>
-      <p className="text-2xl font-semibold text-white">{value}</p>
-      <p className="text-sm text-slate-300">{label}</p>
-    </div>
   );
 }
 
