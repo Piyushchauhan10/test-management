@@ -81,6 +81,9 @@ type FormData = {
 }
 
 export default function DefectForm({ update, data }: Props) {
+
+  console.log(data);
+  
   const navigate = useNavigate()
   const { sendRequest } = useHttp()
 
@@ -99,7 +102,7 @@ export default function DefectForm({ update, data }: Props) {
         severity: data?.severity ?? "",
         status: data?.status ?? "",
         project_ID: activeProjectId,
-        sprint_ID: "",
+        sprint_ID: data?.targetCycle?.sprint_ID ?? "",
         testCycle_ID: data?.targetCycle_ID ?? data?.detectedCycle_ID ?? "",
         assignedTo_ID: data?.assignedTo_ID ?? "",
       },
