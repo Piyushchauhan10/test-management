@@ -1,6 +1,6 @@
 import { DEPARTMENTS, STATUSES } from './types/grid';
 
-import type { GridRow, Department, Status, } from "./types/grid"
+import type { GridRow } from "./types/grid"
 
 const firstNames = [
   'James', 'Mary', 'Robert', 'Patricia', 'John', 'Jennifer', 'Michael', 'Linda',

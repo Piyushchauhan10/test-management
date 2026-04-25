@@ -20,7 +20,7 @@ import type {
   VisibilityState
 } from '@tanstack/react-table';
 
-import type { GridRow, EditingCell, DEPARTMENTS, STATUSES } from '../../lib/types/grid';
+import type { GridRow, EditingCell } from '../../lib/types/grid';
 import { generateMockData, createEmptyRow } from '@/lib/mock-data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -47,7 +47,6 @@ const DataGrid: React.FC = () => {
   const [showFilters, setShowFilters] = useState(true);
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [flashedCells, setFlashedCells] = useState<Set<string>>(new Set());
-  const [focusedCell, setFocusedCell] = useState<{ rowIdx: number; colIdx: number } | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const flashCell = useCallback((rowId: string, colId: string) => {

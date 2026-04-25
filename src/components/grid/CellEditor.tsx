@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DEPARTMENTS, STATUSES } from '../../lib/types/grid';
-import type { Department, Status } from "../../lib/types/grid"
 
 interface CellEditorProps {
   value: string | number;

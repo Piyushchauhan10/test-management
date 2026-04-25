@@ -1,33 +1,14 @@
 import {
-  Folder,
-  Forward,
-  MoreHorizontal,
-  Trash2,
-  type LucideIcon,
-} from "lucide-react"
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 import useHttp from "@/hooks/use-http"
 import React from "react"
 
 export function NavProjects() {
-  const { isMobile } = useSidebar()
-
   const httpHook = useHttp()
   const [projects, setProjects] = React.useState<any[]>([])
 

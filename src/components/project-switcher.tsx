@@ -1,6 +1,6 @@
 import * as React from "react"
 import { ChevronsUpDown, Plus, ProjectorIcon } from "lucide-react"
-import { Link, useParams } from "react-router-dom"
+import { Link } from "react-router-dom"
 
 import {
   DropdownMenu,
