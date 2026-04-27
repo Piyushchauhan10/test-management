@@ -1,5 +1,4 @@
 import DefectForm from "@/components/projects/DefectForm"
-import DefectComments from "@/components/projects/DefectComments"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Link, useParams } from "react-router-dom"
@@ -72,7 +71,6 @@ const EditDefect = () => {
         {!loading && defect && (
           <div className="space-y-8">
             <DefectForm update={true} data={defect} />
-            <DefectComments defectId={defect.ID} />
           </div>
         )}
       </CardContent>
