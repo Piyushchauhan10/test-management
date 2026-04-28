@@ -12,6 +12,7 @@ type Defect = {
   severity: string
   status: string
   assignedTo_ID?: string | null
+  detectedBy_ID?: string | null
   detectedCycle_ID?: string | null
   targetCycle_ID?: string | null
   assignedTo?: {

@@ -1,98 +1,97 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { Controller, useForm } from "react-hook-form"
-import { useNavigate } from "react-router-dom"
-import { toast } from "sonner"
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
-import useHttp from "@/hooks/use-http"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RichTextEditor } from "@/components/ui/rich-text-editor"
+import useHttp from "@/hooks/use-http";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 
-const NONE_VALUE = "__none__"
+const NONE_VALUE = "__none__";
 
 type Project = {
-  ID: string
-  name: string
-}
+  ID: string;
+  name: string;
+};
 
 type Sprint = {
-  ID: string
-  name: string
-  project_ID: string
-}
+  ID: string;
+  name: string;
+  project_ID: string;
+};
 
 type TestCycle = {
-  ID: string
-  name: string
-  project_ID: string
-  sprint_ID: string
-}
+  ID: string;
+  name: string;
+  project_ID: string;
+  sprint_ID: string;
+};
 
 type User = {
-  ID: string
-  username: string
-  email?: string
-}
+  ID: string;
+  username: string;
+  email?: string;
+};
 
 type Defect = {
-  ID: string
-  title: string
-  description: string
-  severity: string
-  status: string
-  assignedTo_ID?: string | null
-  detectedCycle_ID?: string | null
-  targetCycle_ID?: string | null
+  ID: string;
+  title: string;
+  description: string;
+  severity: string;
+  status: string;
+  assignedTo_ID?: string | null;
+  detectedBy_ID?: string | null;
+  detectedCycle_ID?: string | null;
+  targetCycle_ID?: string | null;
   targetCycle?: {
-    ID: string
-    project_ID: string
-    sprint_ID: string
-  } | null
+    ID: string;
+    project_ID: string;
+    sprint_ID: string;
+  } | null;
   detectedCycle?: {
-    ID: string
-    project_ID: string
-    sprint_ID: string
-  } | null
-}
+    ID: string;
+    project_ID: string;
+    sprint_ID: string;
+  } | null;
+};
 
 type Props = {
-  update: boolean
-  data?: Defect | null
-}
+  update: boolean;
+  data?: Defect | null;
+};
 
 type FormData = {
-  title: string
-  description: string
-  severity: string
-  status: string
-  project_ID: string
-  sprint_ID: string
-  testCycle_ID: string
-  assignedTo_ID: string
-}
+  title: string;
+  description: string;
+  severity: string;
+  status: string;
+  project_ID: string;
+  sprint_ID: string;
+  testCycle_ID: string;
+  assignedTo_ID: string;
+  detectedBy_ID: string;
+};
 
 export default function DefectForm({ update, data }: Props) {
+  const navigate = useNavigate();
+  const { sendRequest } = useHttp();
 
-  console.log(data);
-  
-  const navigate = useNavigate()
-  const { sendRequest } = useHttp()
+  const activeProjectId = localStorage.getItem("projectId") || "";
 
-  const activeProjectId = localStorage.getItem("projectId") || ""
-
-  const [projects, setProjects] = useState<Project[]>([])
-  const [sprints, setSprints] = useState<Sprint[]>([])
-  const [testCycles, setTestCycles] = useState<TestCycle[]>([])
-  const [users, setUsers] = useState<User[]>([])
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [testCycles, setTestCycles] = useState<TestCycle[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   const { control, register, handleSubmit, reset, setValue, watch } =
     useForm<FormData>({
@@ -105,127 +104,130 @@ export default function DefectForm({ update, data }: Props) {
         sprint_ID: data?.targetCycle?.sprint_ID ?? "",
         testCycle_ID: data?.targetCycle_ID ?? data?.detectedCycle_ID ?? "",
         assignedTo_ID: data?.assignedTo_ID ?? "",
+        detectedBy_ID: data?.detectedBy_ID ?? "",
       },
-    })
+    });
 
-  const selectedProjectId = watch("project_ID")
-  const selectedSprintId = watch("sprint_ID")
+  const selectedProjectId = watch("project_ID");
+  const selectedSprintId = watch("sprint_ID");
 
   const fetchProjects = useCallback(async () => {
     try {
       const res = await sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Projects`
-      )
-      setProjects(res?.data?.value || res?.data || [])
+        `${import.meta.env.VITE_BACKEND_API_URL}/Projects`,
+      );
+      setProjects(res?.data?.value || res?.data || []);
     } catch {
-      toast.error("Failed to load projects")
+      toast.error("Failed to load projects");
     }
-  }, [sendRequest])
+  }, [sendRequest]);
 
   const fetchSprints = useCallback(
     async (projectId: string) => {
       if (!projectId) {
-        setSprints([])
-        return
+        setSprints([]);
+        return;
       }
 
       try {
         const res = await sendRequest(
-          `${import.meta.env.VITE_BACKEND_API_URL}/Sprints?$filter=project_ID eq '${projectId}'`
-        )
-        setSprints(res?.data?.value || res?.data || [])
+          `${import.meta.env.VITE_BACKEND_API_URL}/Sprints?$filter=project_ID eq '${projectId}'`,
+        );
+        setSprints(res?.data?.value || res?.data || []);
       } catch {
-        toast.error("Failed to load sprints")
+        toast.error("Failed to load sprints");
       }
     },
-    [sendRequest]
-  )
+    [sendRequest],
+  );
 
   const fetchTestCycles = useCallback(
     async (projectId: string, sprintId: string) => {
       if (!projectId || !sprintId) {
-        setTestCycles([])
-        return
+        setTestCycles([]);
+        return;
       }
 
       try {
         const res = await sendRequest(
-          `${import.meta.env.VITE_BACKEND_API_URL}/TestCycles?$filter=project_ID eq '${projectId}' and sprint_ID eq '${sprintId}'`
-        )
-        setTestCycles(res?.data?.value || res?.data || [])
+          `${import.meta.env.VITE_BACKEND_API_URL}/TestCycles?$filter=project_ID eq '${projectId}' and sprint_ID eq '${sprintId}'`,
+        );
+        setTestCycles(res?.data?.value || res?.data || []);
       } catch {
-        toast.error("Failed to load test cycles")
+        toast.error("Failed to load test cycles");
       }
     },
-    [sendRequest]
-  )
+    [sendRequest],
+  );
 
   const fetchUsers = useCallback(async () => {
     try {
       const res = await sendRequest(
-        `${import.meta.env.VITE_BACKEND_API_URL}/Users`
-      )
-      setUsers(res?.data?.value || res?.data || [])
+        `${import.meta.env.VITE_BACKEND_API_URL}/Users`,
+      );
+      setUsers(res?.data?.value || res?.data || []);
     } catch {
-      toast.error("Failed to load users")
+      toast.error("Failed to load users");
     }
-  }, [sendRequest])
+  }, [sendRequest]);
 
   const fetchCycleById = useCallback(
     async (cycleId: string) => {
       try {
         const res = await sendRequest(
-          `${import.meta.env.VITE_BACKEND_API_URL}/TestCycles('${cycleId}')`
-        )
-        return (res?.data || null) as TestCycle | null
+          `${import.meta.env.VITE_BACKEND_API_URL}/TestCycles('${cycleId}')`,
+        );
+        return (res?.data || null) as TestCycle | null;
       } catch {
-        toast.error("Failed to load selected test cycle")
-        return null
+        toast.error("Failed to load selected test cycle");
+        return null;
       }
     },
-    [sendRequest]
-  )
+    [sendRequest],
+  );
 
   useEffect(() => {
-    fetchProjects()
-    fetchUsers()
-  }, [fetchProjects, fetchUsers])
+    fetchProjects();
+    fetchUsers();
+  }, [fetchProjects, fetchUsers]);
 
   useEffect(() => {
     if (selectedProjectId) {
-      fetchSprints(selectedProjectId)
-      return
+      fetchSprints(selectedProjectId);
+      return;
     }
 
-    setSprints([])
-    setTestCycles([])
-  }, [fetchSprints, selectedProjectId])
+    setSprints([]);
+    setTestCycles([]);
+  }, [fetchSprints, selectedProjectId]);
 
   useEffect(() => {
     if (selectedProjectId && selectedSprintId) {
-      fetchTestCycles(selectedProjectId, selectedSprintId)
-      return
+      fetchTestCycles(selectedProjectId, selectedSprintId);
+      return;
     }
 
-    setTestCycles([])
-  }, [fetchTestCycles, selectedProjectId, selectedSprintId])
+    setTestCycles([]);
+  }, [fetchTestCycles, selectedProjectId, selectedSprintId]);
 
   useEffect(() => {
-    let isMounted = true
+    let isMounted = true;
 
     const syncForm = async () => {
-      const cycleId = data?.targetCycle_ID || data?.detectedCycle_ID || ""
-      const expandedCycle = data?.targetCycle || data?.detectedCycle || null
+      const cycleId = data?.targetCycle_ID || data?.detectedCycle_ID || "";
+      const expandedCycle = data?.targetCycle || data?.detectedCycle || null;
       const resolvedCycle =
-        expandedCycle ||
-        (cycleId ? await fetchCycleById(cycleId) : null)
+        expandedCycle || (cycleId ? await fetchCycleById(cycleId) : null);
 
       const projectId =
-        resolvedCycle?.project_ID || activeProjectId || data?.targetCycle?.project_ID || ""
+        resolvedCycle?.project_ID ||
+        activeProjectId ||
+        data?.targetCycle?.project_ID ||
+        "";
       const sprintId =
-        resolvedCycle?.sprint_ID || data?.targetCycle?.sprint_ID || ""
+        resolvedCycle?.sprint_ID || data?.targetCycle?.sprint_ID || "";
 
-      if (!isMounted) return
+      if (!isMounted) return;
 
       reset({
         title: data?.title ?? "",
@@ -236,23 +238,31 @@ export default function DefectForm({ update, data }: Props) {
         sprint_ID: sprintId,
         testCycle_ID: cycleId,
         assignedTo_ID: data?.assignedTo_ID ?? "",
-      })
+        detectedBy_ID: data?.detectedBy_ID ?? "",
+      });
 
       if (projectId) {
-        fetchSprints(projectId)
+        fetchSprints(projectId);
       }
 
       if (projectId && sprintId) {
-        fetchTestCycles(projectId, sprintId)
+        fetchTestCycles(projectId, sprintId);
       }
-    }
+    };
 
-    syncForm()
+    syncForm();
 
     return () => {
-      isMounted = false
-    }
-  }, [activeProjectId, data, fetchCycleById, fetchSprints, fetchTestCycles, reset])
+      isMounted = false;
+    };
+  }, [
+    activeProjectId,
+    data,
+    fetchCycleById,
+    fetchSprints,
+    fetchTestCycles,
+    reset,
+  ]);
 
   const mentionItems = useMemo(
     () =>
@@ -261,12 +271,12 @@ export default function DefectForm({ update, data }: Props) {
         label: user.username,
         sublabel: user.email,
       })),
-    [users]
-  )
+    [users],
+  );
 
   const onSubmit = async (values: FormData) => {
     try {
-      const isEdit = Boolean(update && data?.ID)
+      const isEdit = Boolean(update && data?.ID);
 
       const payload = {
         title: values.title,
@@ -274,27 +284,28 @@ export default function DefectForm({ update, data }: Props) {
         severity: values.severity,
         status: values.status,
         assignedTo_ID: values.assignedTo_ID || null,
+        detectedBy_ID: values.detectedBy_ID || null,
         detectedCycle_ID: values.testCycle_ID || null,
         targetCycle_ID: values.testCycle_ID || null,
-      }
+      };
 
       const url =
         import.meta.env.VITE_BACKEND_API_URL +
-        (isEdit ? `/Defects('${data?.ID}')` : "/Defects")
+        (isEdit ? `/Defects('${data?.ID}')` : "/Defects");
 
       await sendRequest(url, {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      })
+      });
 
-      toast.success(`Defect ${isEdit ? "updated" : "created"}`)
-      navigate("/admin/defects")
+      toast.success(`Defect ${isEdit ? "updated" : "created"}`);
+      navigate("/admin/defects");
     } catch (err) {
-      console.error(err)
-      toast.error("Something went wrong")
+      console.error(err);
+      toast.error("Something went wrong");
     }
-  }
+  };
 
   return (
     <Card className="border-0 shadow-none">
@@ -314,13 +325,14 @@ export default function DefectForm({ update, data }: Props) {
                 render={({ field }) => (
                   <Select
                     value={field.value || ""}
+                    disabled
                     onValueChange={(value) => {
-                      field.onChange(value)
-                      setValue("sprint_ID", "")
-                      setValue("testCycle_ID", "")
+                      field.onChange(value);
+                      setValue("sprint_ID", "");
+                      setValue("testCycle_ID", "");
                     }}
                   >
-                    <SelectTrigger className="h-11 w-full">
+                    <SelectTrigger className="h-11 w-full bg-gray-100 cursor-not-allowed">
                       <SelectValue placeholder="Select project" />
                     </SelectTrigger>
 
@@ -345,8 +357,8 @@ export default function DefectForm({ update, data }: Props) {
                   <Select
                     value={field.value || NONE_VALUE}
                     onValueChange={(value) => {
-                      field.onChange(value === NONE_VALUE ? "" : value)
-                      setValue("testCycle_ID", "")
+                      field.onChange(value === NONE_VALUE ? "" : value);
+                      setValue("testCycle_ID", "");
                     }}
                     disabled={!selectedProjectId}
                   >
@@ -403,7 +415,10 @@ export default function DefectForm({ update, data }: Props) {
                 control={control}
                 name="severity"
                 render={({ field }) => (
-                  <Select value={field.value || ""} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
                     <SelectTrigger className="h-11 w-full">
                       <SelectValue placeholder="Select severity" />
                     </SelectTrigger>
@@ -427,7 +442,10 @@ export default function DefectForm({ update, data }: Props) {
                 control={control}
                 name="status"
                 render={({ field }) => (
-                  <Select value={field.value || ""} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
                     <SelectTrigger className="h-11 w-full">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
@@ -443,7 +461,7 @@ export default function DefectForm({ update, data }: Props) {
               />
             </div>
 
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2 ">
               <Label>Assign To</Label>
               <Controller
                 control={control}
@@ -461,6 +479,35 @@ export default function DefectForm({ update, data }: Props) {
 
                     <SelectContent>
                       <SelectItem value={NONE_VALUE}>Unassigned</SelectItem>
+                      {users.map((user) => (
+                        <SelectItem key={user.ID} value={user.ID}>
+                          {user.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Detected By</Label>
+              <Controller
+                control={control}
+                name="detectedBy_ID"
+                render={({ field }) => (
+                  <Select
+                    value={field.value || NONE_VALUE}
+                    onValueChange={(value) =>
+                      field.onChange(value === NONE_VALUE ? "" : value)
+                    }
+                  >
+                    <SelectTrigger className="h-11 w-full">
+                      <SelectValue placeholder="Select user who detected the defect" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value={NONE_VALUE}>Not specified</SelectItem>
                       {users.map((user) => (
                         <SelectItem key={user.ID} value={user.ID}>
                           {user.username}
@@ -495,5 +542,5 @@ export default function DefectForm({ update, data }: Props) {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,26 +1,18 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
+  FileText,
   Folder,
-  FolderTree,
-  FlaskConical,
   Loader2,
   Search,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -29,16 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 const TESTLAB_STORAGE_KEY = "testlab_local_data_v1";
+const FOLDER_API = "http://72.61.244.79:4004/odata/v4/test-management/Folders";
+const TESTCASE_API = `${import.meta.env.VITE_BACKEND_API_URL}/TestCases`;
+const SPRINT_API = `${import.meta.env.VITE_BACKEND_API_URL}/Sprints`;
+const TESTSTEP_API = `${import.meta.env.VITE_BACKEND_API_URL}/TestSteps`;
 
 type FolderNode = {
   ID: string;
@@ -48,21 +36,10 @@ type FolderNode = {
   children?: FolderNode[];
 };
 
-type Project = {
-  ID: string;
-  name: string;
-};
-
 type Sprint = {
   ID: string;
   name: string;
   project_ID: string;
-};
-
-type TestCycle = {
-  ID: string;
-  name: string;
-  sprint_ID: string;
 };
 
 type TestCase = {
@@ -73,104 +50,31 @@ type TestCase = {
   folder_ID: string;
 };
 
+type TestStep = {
+  ID: string;
+  stepNumber: number;
+  action: string;
+  expectedResult: string;
+  testCase_ID: string;
+};
+
 type TestLabStore = {
-  folders: FolderNode[];
-  projects: Project[];
   sprints: Sprint[];
-  cycles: TestCycle[];
+  sprintAssignments?: Record<string, string[]>;
+};
+
+type AssignedTreeNode = Omit<FolderNode, "children"> & {
+  children: AssignedTreeNode[];
   testCases: TestCase[];
 };
 
 const defaultTestLabStore: TestLabStore = {
-  projects: [
-    { ID: "project-1", name: "Website Revamp" },
-    { ID: "project-2", name: "Mobile App QA" },
-  ],
-  sprints: [
-    { ID: "sprint-1", name: "Sprint 1", project_ID: "project-1" },
-    { ID: "sprint-2", name: "Sprint 2", project_ID: "project-1" },
-    { ID: "sprint-3", name: "Regression Sprint", project_ID: "project-2" },
-  ],
-  cycles: [
-    { ID: "cycle-1", name: "Smoke Cycle", sprint_ID: "sprint-1" },
-    { ID: "cycle-2", name: "Regression Cycle", sprint_ID: "sprint-2" },
-    { ID: "cycle-3", name: "Android Cycle", sprint_ID: "sprint-3" },
-  ],
-  folders: [
-    {
-      ID: "folder-1",
-      name: "Authentication",
-      parentFolder_ID: null,
-      testCycle_ID: "cycle-1",
-    },
-    {
-      ID: "folder-2",
-      name: "Login",
-      parentFolder_ID: "folder-1",
-      testCycle_ID: "cycle-1",
-    },
-    {
-      ID: "folder-3",
-      name: "Forgot Password",
-      parentFolder_ID: "folder-1",
-      testCycle_ID: null,
-    },
-    {
-      ID: "folder-4",
-      name: "Checkout",
-      parentFolder_ID: null,
-      testCycle_ID: "cycle-2",
-    },
-    {
-      ID: "folder-5",
-      name: "Payments",
-      parentFolder_ID: "folder-4",
-      testCycle_ID: "cycle-2",
-    },
-    {
-      ID: "folder-6",
-      name: "Profile",
-      parentFolder_ID: null,
-      testCycle_ID: "cycle-3",
-    },
-  ],
-  testCases: [
-    {
-      ID: "tc-1",
-      title: "User can log in with valid credentials",
-      priority: "High",
-      preconditions: "User account is active",
-      folder_ID: "folder-2",
-    },
-    {
-      ID: "tc-2",
-      title: "User cannot log in with invalid password",
-      priority: "Medium",
-      preconditions: "User account exists",
-      folder_ID: "folder-2",
-    },
-    {
-      ID: "tc-3",
-      title: "Forgot password sends reset email",
-      priority: "High",
-      preconditions: "Email inbox is reachable",
-      folder_ID: "folder-3",
-    },
-    {
-      ID: "tc-4",
-      title: "Card payment completes checkout",
-      priority: "High",
-      preconditions: "Cart contains at least one item",
-      folder_ID: "folder-5",
-    },
-    {
-      ID: "tc-5",
-      title: "Profile page loads saved details",
-      priority: "Low",
-      preconditions: "User is logged in",
-      folder_ID: "folder-6",
-    },
-  ],
+  sprints: [],
+  sprintAssignments: {
+    "sprint-1": ["folder-1", "folder-2"],
+    "sprint-2": ["folder-4", "folder-5"],
+    "sprint-3": ["folder-6"],
+  },
 };
 
 const readTestLabStore = (): TestLabStore => {
@@ -189,7 +93,13 @@ const readTestLabStore = (): TestLabStore => {
   }
 
   try {
-    return JSON.parse(saved) as TestLabStore;
+    const parsed = JSON.parse(saved) as TestLabStore;
+
+    return {
+      ...defaultTestLabStore,
+      ...parsed,
+      sprintAssignments: parsed.sprintAssignments || {},
+    };
   } catch {
     window.localStorage.setItem(
       TESTLAB_STORAGE_KEY,
@@ -224,16 +134,30 @@ const buildTree = (data: FolderNode[]) => {
   return roots;
 };
 
-const getVisibleTree = (nodes: FolderNode[], query: string): FolderNode[] => {
+const getVisibleTree = (
+  nodes: FolderNode[],
+  query: string,
+  testCasesByFolder: Record<string, TestCase[]>,
+): FolderNode[] => {
   if (!query.trim()) return nodes;
 
   const normalizedQuery = query.toLowerCase();
 
   return nodes.reduce<FolderNode[]>((acc, node) => {
-    const visibleChildren = getVisibleTree(node.children || [], query);
+    const visibleChildren = getVisibleTree(
+      node.children || [],
+      query,
+      testCasesByFolder,
+    );
     const matches = node.name.toLowerCase().includes(normalizedQuery);
+    const matchesTestCase = (testCasesByFolder[node.ID] || []).some((testCase) =>
+      [testCase.title, testCase.preconditions || "", testCase.priority || ""]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
 
-    if (matches || visibleChildren.length) {
+    if (matches || matchesTestCase || visibleChildren.length) {
       acc.push({
         ...node,
         children: visibleChildren,
@@ -244,230 +168,210 @@ const getVisibleTree = (nodes: FolderNode[], query: string): FolderNode[] => {
   }, []);
 };
 
-const priorityTone: Record<string, string> = {
-  High: "bg-rose-100 text-rose-700",
-  Medium: "bg-amber-100 text-amber-700",
-  Low: "bg-emerald-100 text-emerald-700",
+const buildAssignedTree = (
+  folders: FolderNode[],
+  assignedIds: string[],
+  testCases: TestCase[],
+) => {
+  const folderMap = new Map(folders.map((folder) => [folder.ID, folder]));
+  const includedFolderIds = new Set<string>();
+  const testCasesByFolder = testCases.reduce<Record<string, TestCase[]>>(
+    (acc, testCase) => {
+      acc[testCase.folder_ID] = [...(acc[testCase.folder_ID] || []), testCase];
+      return acc;
+    },
+    {},
+  );
+
+  const collectDescendants = (folderId: string) => {
+    if (includedFolderIds.has(folderId)) return;
+
+    includedFolderIds.add(folderId);
+
+    folders.forEach((folder) => {
+      if (folder.parentFolder_ID === folderId) {
+        collectDescendants(folder.ID);
+      }
+    });
+  };
+
+  assignedIds.forEach((folderId) => {
+    if (folderMap.has(folderId)) {
+      collectDescendants(folderId);
+    }
+  });
+
+  const nodeMap = new Map<string, AssignedTreeNode>();
+
+  includedFolderIds.forEach((folderId) => {
+    const folder = folderMap.get(folderId);
+    if (!folder) return;
+
+    nodeMap.set(folderId, {
+      ...folder,
+      children: [],
+      testCases: testCasesByFolder[folderId] || [],
+    });
+  });
+
+  const roots: AssignedTreeNode[] = [];
+
+  nodeMap.forEach((node) => {
+    if (node.parentFolder_ID && nodeMap.has(node.parentFolder_ID)) {
+      nodeMap.get(node.parentFolder_ID)?.children.push(node);
+      return;
+    }
+
+    roots.push(node);
+  });
+
+  return roots;
 };
 
 export default function TestLab() {
-  const [tree, setTree] = useState<FolderNode[]>([]);
-  const [assignedFolders, setAssignedFolders] = useState<FolderNode[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState<FolderNode | null>(null);
-
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [folders, setFolders] = useState<FolderNode[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [cycles, setCycles] = useState<TestCycle[]>([]);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
-
-  const [selectedProject, setSelectedProject] = useState("");
+  const [testSteps, setTestSteps] = useState<TestStep[]>([]);
   const [selectedSprint, setSelectedSprint] = useState("");
-  const [selectedCycle, setSelectedCycle] = useState("");
-
   const [folderSearch, setFolderSearch] = useState("");
-  const [testCaseSearch, setTestCaseSearch] = useState("");
-
-  const [pageLoading, setPageLoading] = useState(true);
-  const [treeLoading, setTreeLoading] = useState(false);
-  const [assignmentSaving, setAssignmentSaving] = useState(false);
-  const [testCaseLoading, setTestCaseLoading] = useState(false);
   const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
+  const [assignmentSaving, setAssignmentSaving] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  const loadAssignments = () => readTestLabStore();
 
   const fetchFolders = async () => {
-    setTreeLoading(true);
+    const res = await fetch(FOLDER_API);
+    if (!res.ok) throw new Error();
 
-    try {
-      const store = readTestLabStore();
-      const folderData = store.folders || [];
-
-      setTree(buildTree(folderData));
-    } catch {
-      toast.error("Failed to load folders");
-    } finally {
-      setTreeLoading(false);
-    }
+    const data = await res.json();
+    setFolders(data.value || []);
   };
 
-  const fetchProjects = async () => {
-    try {
-      const store = readTestLabStore();
-      setProjects(store.projects || []);
-    } catch {
-      toast.error("Failed to load projects");
-    }
+  const fetchTestCases = async () => {
+    const res = await fetch(TESTCASE_API);
+    if (!res.ok) throw new Error();
+
+    const data = await res.json();
+    setTestCases(data.value || []);
   };
 
-  const fetchSprints = async (projectId: string) => {
-    try {
-      const store = readTestLabStore();
-      setSprints(
-        (store.sprints || []).filter((sprint) => sprint.project_ID === projectId),
-      );
-    } catch {
-      toast.error("Failed to load sprints");
-    }
+  const fetchTestSteps = async () => {
+    const res = await fetch(TESTSTEP_API);
+    if (!res.ok) throw new Error();
+
+    const data = await res.json();
+    setTestSteps(data.value || []);
   };
 
-  const fetchCycles = async (sprintId: string) => {
-    try {
-      const store = readTestLabStore();
-      setCycles(
-        (store.cycles || []).filter((cycle) => cycle.sprint_ID === sprintId),
-      );
-    } catch {
-      toast.error("Failed to load test cycles");
-    }
-  };
+  const fetchSprints = async () => {
+    const activeProjectId =
+      typeof window !== "undefined" ? window.localStorage.getItem("projectId") || "" : "";
+    const url = activeProjectId
+      ? `${SPRINT_API}?$filter=project_ID eq '${activeProjectId}'`
+      : SPRINT_API;
 
-  const fetchAssignedFolders = async (cycleId: string) => {
-    try {
-      const store = readTestLabStore();
-      const nextFolders = (store.folders || []).filter(
-        (folder) => folder.testCycle_ID === cycleId,
-      );
+    const res = await fetch(url);
+    if (!res.ok) throw new Error();
 
-      setAssignedFolders(nextFolders);
+    const data = await res.json();
+    const nextSprints = data.value || [];
+    setSprints(nextSprints);
 
-      if (!nextFolders.length) {
-        setSelectedFolder(null);
-        setTestCases([]);
-        return;
+    setSelectedSprint((current) => {
+      if (current && nextSprints.some((sprint: Sprint) => sprint.ID === current)) {
+        return current;
       }
 
-      const nextSelected =
-        nextFolders.find(
-          (folder: FolderNode) => folder.ID === selectedFolder?.ID,
-        ) || nextFolders[0];
-
-      setSelectedFolder(nextSelected);
-      await fetchTestCases(nextSelected);
-    } catch {
-      toast.error("Failed to load assigned folders");
-    }
+      return nextSprints[0]?.ID || "";
+    });
   };
 
-  const fetchTestCases = async (folder: FolderNode) => {
-    setTestCaseLoading(true);
+  const loadPageData = async () => {
+    setPageLoading(true);
 
     try {
-      const store = readTestLabStore();
-      const nextTestCases = (store.testCases || []).filter(
-        (testCase) => testCase.folder_ID === folder.ID,
-      );
-      setSelectedFolder(folder);
-      setTestCases(nextTestCases);
+      await Promise.all([
+        fetchFolders(),
+        fetchTestCases(),
+        fetchTestSteps(),
+        fetchSprints(),
+      ]);
     } catch {
-      toast.error("Failed to load test cases");
+      toast.error("Failed to load Test Lab data");
     } finally {
-      setTestCaseLoading(false);
+      setPageLoading(false);
     }
   };
 
   useEffect(() => {
-    const load = async () => {
-      setPageLoading(true);
-      await Promise.all([fetchFolders(), fetchProjects()]);
-      setPageLoading(false);
-    };
-
-    load();
+    void loadPageData();
+    // Initial page hydration only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!selectedProject) {
-      setSprints([]);
-      setCycles([]);
-      setAssignedFolders([]);
-      setSelectedSprint("");
-      setSelectedCycle("");
-      setSelectedFolder(null);
-      setTestCases([]);
-      return;
-    }
+  const folderTree = useMemo(() => buildTree(folders), [folders]);
+  const testCasesByFolder = useMemo(
+    () =>
+      testCases.reduce<Record<string, TestCase[]>>((acc, testCase) => {
+        acc[testCase.folder_ID] = [...(acc[testCase.folder_ID] || []), testCase];
+        return acc;
+      }, {}),
+    [testCases],
+  );
+  const filteredTree = useMemo(
+    () => getVisibleTree(folderTree, folderSearch, testCasesByFolder),
+    [folderSearch, folderTree, testCasesByFolder],
+  );
+  const testStepsByTestCase = useMemo(
+    () =>
+      testSteps.reduce<Record<string, TestStep[]>>((acc, testStep) => {
+        acc[testStep.testCase_ID] = [...(acc[testStep.testCase_ID] || []), testStep].sort(
+          (a, b) => a.stepNumber - b.stepNumber,
+        );
+        return acc;
+      }, {}),
+    [testSteps],
+  );
 
-    setSelectedSprint("");
-    setSelectedCycle("");
-    setCycles([]);
-    setAssignedFolders([]);
-    setSelectedFolder(null);
-    setTestCases([]);
-    fetchSprints(selectedProject);
-  }, [selectedProject]);
+  const assignedFolderIds = useMemo(() => {
+    if (!selectedSprint) return [];
+    return loadAssignments().sprintAssignments?.[selectedSprint] || [];
+  }, [selectedSprint, folders, sprints]);
 
-  useEffect(() => {
-    if (!selectedSprint) {
-      setCycles([]);
-      setAssignedFolders([]);
-      setSelectedCycle("");
-      setSelectedFolder(null);
-      setTestCases([]);
-      return;
-    }
-
-    setSelectedCycle("");
-    setAssignedFolders([]);
-    setSelectedFolder(null);
-    setTestCases([]);
-    fetchCycles(selectedSprint);
-  }, [selectedSprint]);
-
-  useEffect(() => {
-    if (!selectedCycle) {
-      setAssignedFolders([]);
-      setSelectedFolder(null);
-      setTestCases([]);
-      return;
-    }
-
-    fetchAssignedFolders(selectedCycle);
-    // The selected cycle is the only trigger we want for the initial folder sync.
-    // Refreshes after save/remove are handled explicitly by the action handlers.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCycle]);
-
-  const handleDragStart = (folder: FolderNode) => {
-    setDraggingFolderId(folder.ID);
-  };
-
-  const handleTreeSelect = (folder: FolderNode) => {
-    const isAssignedToSelectedCycle = assignedFolders.some(
-      (assignedFolder) => assignedFolder.ID === folder.ID,
-    );
-
-    if (isAssignedToSelectedCycle) {
-      void fetchTestCases(folder);
-      return;
-    }
-
-    setSelectedFolder(folder);
-    setTestCases([]);
-  };
+  const assignedTree = useMemo(
+    () => buildAssignedTree(folders, assignedFolderIds, testCases),
+    [assignedFolderIds, folders, testCases],
+  );
 
   const handleAssignFolder = async (folderId: string) => {
-    if (!selectedCycle) {
-      toast.error("Select a test cycle first");
+    if (!selectedSprint) {
+      toast.error("Select a sprint first");
       return;
     }
 
     setAssignmentSaving(true);
 
     try {
-      const store = readTestLabStore();
-      const folderExists = store.folders.some((folder) => folder.ID === folderId);
+      const store = loadAssignments();
+      const currentAssignments = store.sprintAssignments?.[selectedSprint] || [];
 
-      if (!folderExists) {
-        throw new Error();
+      if (currentAssignments.includes(folderId)) {
+        toast.info("Folder is already in the right tree");
+        return;
       }
 
-      const nextFolders = store.folders.map((folder) =>
-        folder.ID === folderId
-          ? { ...folder, testCycle_ID: selectedCycle }
-          : folder,
-      );
+      writeTestLabStore({
+        ...store,
+        sprintAssignments: {
+          ...(store.sprintAssignments || {}),
+          [selectedSprint]: [...currentAssignments, folderId],
+        },
+      });
 
-      writeTestLabStore({ ...store, folders: nextFolders });
-      await Promise.all([fetchFolders(), fetchAssignedFolders(selectedCycle)]);
-      toast.success("Folder added to the right panel");
+      await loadPageData();
+      toast.success("Folder added to the sprint tree");
     } catch {
       toast.error("Failed to assign folder");
     } finally {
@@ -477,19 +381,24 @@ export default function TestLab() {
   };
 
   const handleUnassignFolder = async (folderId: string) => {
-    if (!selectedCycle) return;
+    if (!selectedSprint) return;
 
     setAssignmentSaving(true);
 
     try {
-      const store = readTestLabStore();
-      const nextFolders = store.folders.map((folder) =>
-        folder.ID === folderId ? { ...folder, testCycle_ID: null } : folder,
-      );
+      const store = loadAssignments();
+      const currentAssignments = store.sprintAssignments?.[selectedSprint] || [];
 
-      writeTestLabStore({ ...store, folders: nextFolders });
-      await Promise.all([fetchFolders(), fetchAssignedFolders(selectedCycle)]);
-      toast.success("Folder removed from the right panel");
+      writeTestLabStore({
+        ...store,
+        sprintAssignments: {
+          ...(store.sprintAssignments || {}),
+          [selectedSprint]: currentAssignments.filter((id) => id !== folderId),
+        },
+      });
+
+      await loadPageData();
+      toast.success("Folder removed from the sprint tree");
     } catch {
       toast.error("Failed to remove folder");
     } finally {
@@ -497,18 +406,43 @@ export default function TestLab() {
     }
   };
 
-  const filteredTree = getVisibleTree(tree, folderSearch);
+  const handleDeleteTestCase = async (testCaseId: string) => {
+    const confirmed =
+      typeof window === "undefined"
+        ? true
+        : window.confirm("Delete this test case and its test steps?");
 
-  const filteredTestCases = testCases.filter((testCase) => {
-    if (!testCaseSearch.trim()) return true;
+    if (!confirmed) return;
 
-    const query = testCaseSearch.toLowerCase();
-    return (
-      testCase.title.toLowerCase().includes(query) ||
-      (testCase.preconditions || "").toLowerCase().includes(query) ||
-      (testCase.priority || "").toLowerCase().includes(query)
-    );
-  });
+    try {
+      const relatedSteps = testStepsByTestCase[testCaseId] || [];
+
+      await Promise.all(
+        relatedSteps.map(async (testStep) => {
+          const response = await fetch(`${TESTSTEP_API}('${testStep.ID}')`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok && response.status !== 204) {
+            throw new Error();
+          }
+        }),
+      );
+
+      const response = await fetch(`${TESTCASE_API}('${testCaseId}')`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok && response.status !== 204) {
+        throw new Error();
+      }
+
+      await loadPageData();
+      toast.success("Test case deleted");
+    } catch {
+      toast.error("Failed to delete test case");
+    }
+  };
 
   if (pageLoading) {
     return (
@@ -522,362 +456,178 @@ export default function TestLab() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.14),_transparent_28%),linear-gradient(180deg,_rgba(248,250,252,1)_0%,_rgba(241,245,249,0.85)_100%)] p-4 md:p-6">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-6">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader className="border-b pb-4">
+            <CardTitle className="text-base font-semibold">
+              Sprint Selection
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <Select value={selectedSprint} onValueChange={setSelectedSprint}>
+              <SelectTrigger className="max-w-md">
+                <SelectValue placeholder="Select sprint" />
+              </SelectTrigger>
+              <SelectContent>
+                {sprints.map((sprint) => (
+                  <SelectItem key={sprint.ID} value={sprint.ID}>
+                    {sprint.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
 
-        <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <Card className="border-slate-200/70 shadow-sm">
-            <CardHeader className="gap-3 border-b">
-              <div className="space-y-1">
-                <CardTitle>Folder Library</CardTitle>
-                <CardDescription>
-                  Select a project, sprint, and cycle, then click an assigned
-                  folder to load its test cases.
-                </CardDescription>
-              </div>
-
-              <div className="relative">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                <Input
-                  value={folderSearch}
-                  onChange={(event) => setFolderSearch(event.target.value)}
-                  placeholder="Search folders"
-                  className="pl-9"
-                />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b pb-4">
+              <div className="flex items-center justify-between gap-4">
+                <CardTitle className="text-base font-semibold">
+                  Left Tree
+                </CardTitle>
+                <div className="relative w-full max-w-xs">
+                  <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    value={folderSearch}
+                    onChange={(event) => setFolderSearch(event.target.value)}
+                    placeholder="Search folders"
+                    className="pl-9"
+                  />
+                </div>
               </div>
             </CardHeader>
+            <CardContent className="min-h-[520px] p-4">
+              {filteredTree.length ? (
+                <div className="space-y-1">
+                  {filteredTree.map((node) => (
+                    <SourceTreeItem
+                      key={node.ID}
+                      node={node}
+                      level={0}
+                      testCasesByFolder={testCasesByFolder}
+                      testStepsByTestCase={testStepsByTestCase}
+                      onDeleteTestCase={handleDeleteTestCase}
+                      searchTerm={folderSearch}
+                      draggingId={draggingFolderId}
+                      onDragStart={(folder) => setDraggingFolderId(folder.ID)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="No folders found"
+                  description="Try a different search term in the left tree."
+                />
+              )}
+            </CardContent>
+          </Card>
 
-            <CardContent className="p-3">
-              <div className="max-h-[720px] overflow-y-auto pr-1">
-                {treeLoading ? (
-                  <EmptyState
-                    icon={<Loader2 className="size-5 animate-spin" />}
-                    title="Loading folders"
-                    description="Fetching the latest folder tree from the backend."
-                  />
-                ) : filteredTree.length ? (
+          <Card className="border border-slate-200 shadow-sm">
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="text-base font-semibold">
+                Right Tree (Drop)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="min-h-[520px] p-4">
+              <div
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const folderId = event.dataTransfer.getData("text/plain");
+                  if (folderId) {
+                    void handleAssignFolder(folderId);
+                  }
+                }}
+                className={`min-h-[488px] rounded-xl border border-dashed p-4 transition ${
+                  selectedSprint
+                    ? "border-slate-300 bg-white"
+                    : "border-slate-200 bg-slate-100"
+                }`}
+              >
+                <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <p className="text-sm text-slate-600">
+                    {selectedSprint
+                      ? "Drop folders here to build the sprint test lab tree."
+                      : "Select a sprint before dropping folders."}
+                  </p>
+                  {assignmentSaving && (
+                    <div className="inline-flex items-center gap-2 text-xs text-slate-500">
+                      <Loader2 className="size-3 animate-spin" />
+                      Saving...
+                    </div>
+                  )}
+                </div>
+
+                {assignedTree.length ? (
                   <div className="space-y-1">
-                    {filteredTree.map((node) => (
-                      <TreeItem
+                    {assignedTree.map((node) => (
+                      <AssignedTreeItem
                         key={node.ID}
                         node={node}
                         level={0}
-                        activeId={selectedFolder?.ID || null}
-                        draggingId={draggingFolderId}
-                        onDragStart={handleDragStart}
-                        onSelect={handleTreeSelect}
+                        testStepsByTestCase={testStepsByTestCase}
+                        onDeleteTestCase={handleDeleteTestCase}
+                        onRemove={handleUnassignFolder}
                       />
                     ))}
                   </div>
                 ) : (
                   <EmptyState
-                    icon={<Search className="size-5" />}
-                    title="No folders found"
-                    description="Try a different search term to find the folder you want."
+                    title="No folders assigned"
+                    description="Drag a folder from the left tree and drop it here."
                   />
                 )}
               </div>
             </CardContent>
           </Card>
-
-          <div className="flex flex-col gap-6">
-            <Card className="border-slate-200/70 shadow-sm">
-              <CardHeader className="gap-3">
-                <CardTitle>Workspace Filters</CardTitle>
-                <CardDescription>
-                  Pick a project, sprint, and cycle before dropping folders into
-                  the execution plan.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-3">
-                <FilterSelect
-                  placeholder="Choose project"
-                  value={selectedProject}
-                  onValueChange={setSelectedProject}
-                  options={projects}
-                />
-                <FilterSelect
-                  placeholder="Choose sprint"
-                  value={selectedSprint}
-                  onValueChange={setSelectedSprint}
-                  options={sprints}
-                  disabled={!selectedProject}
-                />
-                <FilterSelect
-                  placeholder="Choose test cycle"
-                  value={selectedCycle}
-                  onValueChange={setSelectedCycle}
-                  options={cycles}
-                  disabled={!selectedSprint}
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200/70 shadow-sm">
-              <CardHeader className="gap-3 border-b">
-                <CardTitle>Dropped Folders</CardTitle>
-                <CardDescription>
-                  Drag folders from the left list and drop them here to show
-                  them in this panel.
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="p-6">
-                <div
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    const folderId = event.dataTransfer.getData("text/plain");
-                    if (folderId) {
-                      void handleAssignFolder(folderId);
-                    }
-                  }}
-                  className={`rounded-2xl border border-dashed p-5 transition ${
-                    selectedCycle
-                      ? "border-sky-200 bg-sky-50/60"
-                      : "border-slate-200 bg-slate-50"
-                  }`}
-                >
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-slate-900">
-                        Drop zone
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedCycle
-                          ? "Drop a folder here and it will appear below."
-                          : "Choose a test cycle first, then drag a folder here."}
-                      </p>
-                    </div>
-
-                    {assignmentSaving && (
-                      <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-muted-foreground shadow-sm">
-                        <Loader2 className="size-3 animate-spin" />
-                        Saving...
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-5 grid gap-3 md:grid-cols-2">
-                    {assignedFolders.length ? (
-                      assignedFolders.map((folder) => (
-                        <button
-                          key={folder.ID}
-                          type="button"
-                          onClick={() => void fetchTestCases(folder)}
-                          className={`group rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-                            selectedFolder?.ID === folder.ID
-                              ? "border-sky-400 ring-2 ring-sky-100"
-                              : "border-slate-200"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                              <div className="rounded-xl bg-sky-100 p-2 text-sky-700">
-                                <Folder className="size-4" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-slate-900">
-                                  {folder.name}
-                                </p>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  Click to load test cases
-                                </p>
-                              </div>
-                            </div>
-
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              className="opacity-70 transition group-hover:opacity-100"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void handleUnassignFolder(folder.ID);
-                              }}
-                            >
-                              <Trash2 className="size-4 text-rose-600" />
-                            </Button>
-                          </div>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="md:col-span-2">
-                        <EmptyState
-                          icon={<FolderTree className="size-5" />}
-                          title="No folders dropped yet"
-                          description="Pick a folder from the left side and drag it into this drop zone."
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200/70 shadow-sm">
-              <CardHeader className="gap-4 border-b">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="space-y-1">
-                    <CardTitle>
-                      {selectedFolder
-                        ? `Test Cases for ${selectedFolder.name}`
-                        : "Test Cases"}
-                    </CardTitle>
-                    <CardDescription>
-                      Review test coverage for the selected folder saved inside
-                      the active cycle.
-                    </CardDescription>
-                  </div>
-
-                  <div className="relative w-full lg:max-w-sm">
-                    <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                    <Input
-                      value={testCaseSearch}
-                      onChange={(event) =>
-                        setTestCaseSearch(event.target.value)
-                      }
-                      placeholder="Search title, priority, or preconditions"
-                      className="pl-9"
-                      disabled={!selectedFolder}
-                    />
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardContent className="p-0">
-                {!selectedFolder ? (
-                  <div className="p-6">
-                    <EmptyState
-                      icon={<FlaskConical className="size-5" />}
-                      title="Pick an assigned folder"
-                      description="Once you choose a folder from the execution board, its test cases will load here from the backend."
-                    />
-                  </div>
-                ) : testCaseLoading ? (
-                  <div className="flex min-h-64 items-center justify-center">
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" />
-                      Loading test cases...
-                    </div>
-                  </div>
-                ) : filteredTestCases.length ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-slate-50">
-                        <TableHead className="px-6">Title</TableHead>
-                        <TableHead>Preconditions</TableHead>
-                        <TableHead>Priority</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredTestCases.map((testCase) => (
-                        <TableRow key={testCase.ID}>
-                          <TableCell className="px-6 py-4 font-medium text-slate-900">
-                            {testCase.title}
-                          </TableCell>
-                          <TableCell className="py-4 whitespace-normal text-muted-foreground">
-                            {testCase.preconditions || "-"}
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <span
-                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                                priorityTone[testCase.priority || ""] ||
-                                "bg-slate-100 text-slate-700"
-                              }`}
-                            >
-                              {testCase.priority || "Unspecified"}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="p-6">
-                    <EmptyState
-                      icon={<Search className="size-5" />}
-                      title="No matching test cases"
-                      description="This folder has no test cases for the current search, or the backend returned an empty result."
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function FilterSelect({
-  value,
-  onValueChange,
-  options,
-  placeholder,
-  disabled,
-}: {
-  value: string;
-  onValueChange: (value: string) => void;
-  options: Array<{ ID: string; name: string }>;
-  placeholder: string;
-  disabled?: boolean;
-}) {
-  return (
-    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.ID} value={option.ID}>
-            {option.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
 function EmptyState({
-  icon,
   title,
   description,
 }: {
-  icon: ReactNode;
   title: string;
   description: string;
 }) {
   return (
-    <div className="flex min-h-40 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-8 text-center">
-      <div className="mb-3 rounded-full bg-white p-3 text-slate-600 shadow-sm">
-        {icon}
+    <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-6 text-center">
+      <div>
+        <p className="font-medium text-slate-900">{title}</p>
+        <p className="mt-1 text-sm text-slate-500">{description}</p>
       </div>
-      <p className="font-medium text-slate-900">{title}</p>
-      <p className="mt-1 max-w-md text-sm text-muted-foreground">
-        {description}
-      </p>
     </div>
   );
 }
 
-function TreeItem({
+function SourceTreeItem({
   node,
   level,
-  activeId,
+  testCasesByFolder,
+  testStepsByTestCase,
+  onDeleteTestCase,
+  searchTerm,
   draggingId,
   onDragStart,
-  onSelect,
 }: {
   node: FolderNode;
   level: number;
-  activeId: string | null;
+  testCasesByFolder: Record<string, TestCase[]>;
+  testStepsByTestCase: Record<string, TestStep[]>;
+  onDeleteTestCase: (testCaseId: string) => void | Promise<void>;
+  searchTerm: string;
   draggingId: string | null;
   onDragStart: (folder: FolderNode) => void;
-  onSelect: (folder: FolderNode) => void;
 }) {
   const [open, setOpen] = useState(level === 0);
+  const folderTestCases = testCasesByFolder[node.ID] || [];
+  const hasChildren = Boolean(node.children?.length) || folderTestCases.length > 0;
+  const isExpanded = open || Boolean(searchTerm);
 
   return (
     <div>
@@ -888,21 +638,17 @@ function TreeItem({
           onDragStart(node);
         }}
         onClick={() => {
-          if (node.children?.length) {
+          if (hasChildren) {
             setOpen((prev) => !prev);
           }
-
-          onSelect(node);
         }}
-        className={`group flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 transition ${
-          activeId === node.ID
-            ? "bg-sky-50 text-sky-900"
-            : "text-slate-700 hover:bg-slate-100"
-        } ${draggingId === node.ID ? "opacity-60" : ""}`}
-        style={{ marginLeft: level * 14 }}
+        className={`flex cursor-grab items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100 ${
+          draggingId === node.ID ? "opacity-60" : ""
+        }`}
+        style={{ marginLeft: level * 16 }}
       >
-        {node.children?.length ? (
-          open ? (
+        {hasChildren ? (
+          isExpanded ? (
             <ChevronDown className="size-4 text-slate-400" />
           ) : (
             <ChevronRight className="size-4 text-slate-400" />
@@ -910,22 +656,190 @@ function TreeItem({
         ) : (
           <div className="size-4" />
         )}
-
         <Folder className="size-4 text-sky-600" />
-        <span className="truncate text-sm font-medium">{node.name}</span>
+        <span>{node.name}</span>
       </div>
 
-      {open &&
+      {isExpanded &&
         node.children?.map((child) => (
-          <TreeItem
+          <SourceTreeItem
             key={child.ID}
             node={child}
             level={level + 1}
-            activeId={activeId}
+            testCasesByFolder={testCasesByFolder}
+            testStepsByTestCase={testStepsByTestCase}
+            onDeleteTestCase={onDeleteTestCase}
+            searchTerm={searchTerm}
             draggingId={draggingId}
             onDragStart={onDragStart}
-            onSelect={onSelect}
           />
+        ))}
+
+      {isExpanded &&
+        folderTestCases.map((testCase) => (
+          <TreeTestCaseAccordion
+            key={testCase.ID}
+            testCase={testCase}
+            testSteps={testStepsByTestCase[testCase.ID] || []}
+            level={level}
+            showExpectedResult={true}
+            onDelete={() => void onDeleteTestCase(testCase.ID)}
+          />
+        ))}
+    </div>
+  );
+}
+
+function AssignedTreeItem({
+  node,
+  level,
+  testStepsByTestCase,
+  onDeleteTestCase,
+  onRemove,
+}: {
+  node: AssignedTreeNode;
+  level: number;
+  testStepsByTestCase: Record<string, TestStep[]>;
+  onDeleteTestCase: (testCaseId: string) => void | Promise<void>;
+  onRemove: (folderId: string) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const hasChildren = node.children.length > 0 || node.testCases.length > 0;
+
+  return (
+    <div>
+      <div
+        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-slate-50"
+        style={{ marginLeft: level * 16 }}
+      >
+        <button
+          type="button"
+          onClick={() => hasChildren && setOpen((prev) => !prev)}
+          className="flex flex-1 items-center gap-2 text-left text-sm text-slate-800"
+        >
+          {hasChildren ? (
+            open ? (
+              <ChevronDown className="size-4 text-slate-400" />
+            ) : (
+              <ChevronRight className="size-4 text-slate-400" />
+            )
+          ) : (
+            <div className="size-4" />
+          )}
+          <Folder className="size-4 text-emerald-600" />
+          <span className="font-medium">{node.name}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => void onRemove(node.ID)}
+          className="rounded-md p-1 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+          aria-label={`Remove ${node.name}`}
+        >
+          <Trash2 className="size-4" />
+        </button>
+      </div>
+
+      {open && (
+        <>
+          {node.children.map((child) => (
+            <AssignedTreeItem
+              key={child.ID}
+              node={child}
+              level={level + 1}
+              testStepsByTestCase={testStepsByTestCase}
+              onDeleteTestCase={onDeleteTestCase}
+              onRemove={onRemove}
+            />
+          ))}
+
+          {node.testCases.map((testCase) => (
+            <TreeTestCaseAccordion
+              key={testCase.ID}
+              testCase={testCase}
+              testSteps={testStepsByTestCase[testCase.ID] || []}
+              level={level}
+              showExpectedResult={true}
+              onDelete={() => void onDeleteTestCase(testCase.ID)}
+            />
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+function TreeTestCaseAccordion({
+  testCase,
+  testSteps,
+  level,
+  showExpectedResult,
+  onDelete,
+}: {
+  testCase: TestCase;
+  testSteps: TestStep[];
+  level: number;
+  showExpectedResult: boolean;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasSteps = testSteps.length > 0;
+
+  return (
+    <div>
+      <div
+        className="flex items-start gap-2 rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+        style={{ marginLeft: (level + 1) * 16 + 20 }}
+      >
+        <button
+          type="button"
+          onClick={() => hasSteps && setOpen((prev) => !prev)}
+          className="flex min-w-0 flex-1 items-start gap-2 text-left"
+        >
+          {hasSteps ? (
+            open ? (
+              <ChevronDown className="mt-0.5 size-4 text-slate-400" />
+            ) : (
+              <ChevronRight className="mt-0.5 size-4 text-slate-400" />
+            )
+          ) : (
+            <div className="size-4" />
+          )}
+          <FileText className="mt-0.5 size-4 text-slate-400" />
+          <div className="min-w-0">
+            <p className="truncate">{testCase.title}</p>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={onDelete}
+          className="rounded-md p-1 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+          aria-label={`Delete ${testCase.title}`}
+        >
+          <Trash2 className="size-4" />
+        </button>
+      </div>
+
+      {open &&
+        testSteps.map((testStep) => (
+          <div
+            key={testStep.ID}
+            className="flex items-start gap-2 rounded-lg px-3 py-1.5 text-xs text-slate-500"
+            style={{ marginLeft: (level + 2) * 16 + 32 }}
+          >
+            <div className="mt-1 size-1.5 rounded-full bg-slate-300" />
+            <div className="min-w-0">
+              <p className="truncate">
+                Step {testStep.stepNumber}: {testStep.action}
+              </p>
+              {showExpectedResult ? (
+                <p className="truncate text-[11px] text-slate-400">
+                  {testStep.expectedResult}
+                </p>
+              ) : null}
+            </div>
+          </div>
         ))}
     </div>
   );
