@@ -1,12 +1,13 @@
 import { useState, useCallback } from "react"
 import { useGlobalError } from "../Context/ErrorContext"
+import { ApiRequestError, extractApiErrorMessages } from "@/lib/api-error"
 
 const useHttp = () => {
   const [data, setData] = useState<any>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<any>({})
 
-  // ⭐ STEP 3: Global error setter
+  // â­ STEP 3: Global error setter
   const { setError: setGlobalError } = useGlobalError()
 
   const sendRequest = useCallback(
@@ -17,15 +18,14 @@ const useHttp = () => {
 
       try {
         const response = await fetch(url, {
-           ...options,
+          ...options,
           headers: {
             "Content-Type": "application/json",
             ...options.headers,
           },
-         
         })
 
-        // ✅ HANDLE DELETE / 204 NO CONTENT
+        // âœ… HANDLE DELETE / 204 NO CONTENT
         if (response.status === 204) {
           const result = {
             success: true,
@@ -38,17 +38,15 @@ const useHttp = () => {
 
         const result = await response.json().catch(() => null)
 
-        // ❌ BACKEND ERROR (400 / 500)
+        // âŒ BACKEND ERROR (400 / 500)
         if (!response.ok) {
-          const message =
-            result?.error?.message ||
-            result?.message ||
-            "Request failed"
+          const messages = extractApiErrorMessages(result, "Request failed")
+          const message = messages.join("\n")
 
-          // ⭐ STEP 3: STORE BACKEND ERROR GLOBALLY
+          // â­ STEP 3: STORE BACKEND ERROR GLOBALLY
           setGlobalError(message)
 
-          throw new Error(message)
+          throw new ApiRequestError(messages, "Request failed")
         }
 
         const value = result?.value ?? result
@@ -70,7 +68,7 @@ const useHttp = () => {
           message,
         }
 
-        // ⭐ STEP 3: STORE ERROR GLOBALLY
+        // â­ STEP 3: STORE ERROR GLOBALLY
         setGlobalError(message)
 
         setError(errorResult)

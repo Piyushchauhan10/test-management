@@ -31,6 +31,10 @@ const topSection = [
         title: "Manage Test Library",
         url: "/admin/test-library",
       },
+      {
+        title: "Test Library New",
+        url: "/admin/test-library-new",
+      },
     ],
   },
    {

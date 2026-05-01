@@ -26,6 +26,7 @@ import EditTestCycle from "@/pages/protected/testcycles/EditTestcycle";
 
 import { useGlobalError } from "@/Context/ErrorContext";
 import TestLibrary from "./pages/protected/test-library/TestLibrary";
+import TestLibraryNew from "./pages/protected/test-library/TestLibraryNew";
 import EditRequirement from "./pages/requirements/EditRequirement";
 import RequirementsList from "./pages/requirements/RequirementList";
 import CreateRequirement from "./pages/requirements/CreateRequirements";
@@ -118,6 +119,7 @@ function App() {
         { path: "teams/create", element: <CreateTeam /> },
         { path: "teams/create/:id", element: <CreateTeam /> },
         { path: "test-library", element: <TestLibrary /> },
+        { path: "test-library-new", element: <TestLibraryNew /> },
         { path: "test-lab", element: <TestLab /> },
       ],
     },

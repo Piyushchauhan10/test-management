@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import useHttp from "@/hooks/use-http";
+import { ApiRequestError } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -303,6 +304,14 @@ export default function DefectForm({ update, data }: Props) {
       navigate("/admin/defects");
     } catch (err) {
       console.error(err);
+      if (err instanceof ApiRequestError) {
+        toast.error(err.messages[0], {
+          description:
+            err.messages.length > 1 ? err.messages.slice(1).join("\n") : undefined,
+        });
+        return;
+      }
+
       toast.error("Something went wrong");
     }
   };

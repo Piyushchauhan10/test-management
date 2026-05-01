@@ -206,10 +206,10 @@ export default function DefectComments({ defectId }: Props) {
       const fileName = segments.pop() || attachment.name
 
       let currentMap = rootMap
-      let currentNode: AttachmentTreeNode | null = null
+      let currentNode: AttachmentTreeNode | undefined
       let currentPath = ""
 
-      segments.forEach((segment) => {
+      for (const segment of segments) {
         currentPath = currentPath ? `${currentPath}/${segment}` : segment
         const folderNode = ensureFolder(currentMap, segment, currentPath)
 
@@ -222,14 +222,14 @@ export default function DefectComments({ defectId }: Props) {
         const childMap = new Map<string, AttachmentTreeNode>()
         folderNode.folders.forEach((folder) => childMap.set(folder.path, folder))
         currentMap = childMap
-      })
+      }
 
       const fileEntry = {
         ...attachment,
         name: fileName,
       }
 
-      if (currentNode) {
+      if (currentNode !== undefined) {
         currentNode.files.push(fileEntry)
       } else {
         const standalonePath = `file:${attachment.id}`
