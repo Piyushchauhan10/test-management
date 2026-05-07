@@ -1,11 +1,20 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
+import {
+  AlignLeft,
+  ClipboardCheck,
+  FileText,
+  Flag,
+  ListChecks,
+  Save,
+  Sparkles,
+  X,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import useHttp from "@/hooks/use-http"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
@@ -62,7 +71,15 @@ export default function RequirementForm({ update, data }: Props) {
   const [sprints, setSprints] = useState<Sprint[]>([])
   const [users, setUsers] = useState<User[]>([])
 
-  const { control, register,setValue, handleSubmit, reset } = useForm<FormData>({
+  const {
+    control,
+    register,
+    setValue,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { isSubmitting },
+  } = useForm<FormData>({
     defaultValues: {
       title: data?.title ?? "",
       description: data?.description ?? "",
@@ -75,7 +92,15 @@ export default function RequirementForm({ update, data }: Props) {
 
   const { currentProject } = useContext(ProjectContext);
 
-  setValue("project_ID", currentProject || "");
+  useEffect(() => {
+    setValue("project_ID", currentProject || activeProjectId || "")
+  }, [activeProjectId, currentProject, setValue])
+
+  const selectedPriority = watch("priority")
+  const selectedStatus = watch("status")
+  const selectedSprint = watch("sprint_ID")
+  const selectedSprintName =
+    sprints.find((sprint) => sprint.ID === selectedSprint)?.name || "Not assigned"
  
   const fetchSprints = useCallback(async (projectId: string) => {
     try {
@@ -166,28 +191,46 @@ export default function RequirementForm({ update, data }: Props) {
   }
 
   return (
-    <Card className="border-0 shadow-none">
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="flex w-full flex-col gap-2">
-              <Label className="text-xs">Title</Label>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70 sm:p-5">
+          <div className="mb-5 flex items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+              <Sparkles className="size-4" />
+            </div>
+            <div>
+              <h3 className="text-sm mt-2 font-semibold text-slate-950 dark:text-slate-50">
+                Requirement Details
+              </h3>
+            
+            </div>
+          </div>
+
+          <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="flex w-full flex-col gap-2 md:col-span-2">
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <FileText className="size-4 text-emerald-600 dark:text-emerald-400" />
+                Title
+              </Label>
               <Input
                 {...register("title")}
                 placeholder="Enter requirement title"
-                className="w-full rounded-xl"
+                className="h-11 w-full border-slate-200 bg-slate-50/70 shadow-none transition focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60"
               />
             </div>
 
             <div className="flex w-full flex-col gap-2">
-              <Label className="text-xs">Priority</Label>
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <Flag className="size-4 text-amber-600 dark:text-amber-400" />
+                Priority
+              </Label>
               <Controller
                 control={control}
                 name="priority"
                 render={({ field }) => (
                   <Select value={field.value || ""} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-11 w-full rounded-xl">
-                      <SelectValue placeholder="Select Priority" />
+                    <SelectTrigger className="h-11 w-full border-slate-200 bg-slate-50/70 shadow-none focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60">
+                      <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="High">High</SelectItem>
@@ -200,14 +243,17 @@ export default function RequirementForm({ update, data }: Props) {
             </div>
 
             <div className="flex w-full flex-col gap-2">
-              <Label className="text-xs">Status</Label>
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <ClipboardCheck className="size-4 text-teal-600 dark:text-teal-400" />
+                Status
+              </Label>
               <Controller
                 control={control}
                 name="status"
                 render={({ field }) => (
                   <Select value={field.value || ""} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-11 w-full rounded-xl">
-                      <SelectValue placeholder="Select Status" />
+                    <SelectTrigger className="h-11 w-full border-slate-200 bg-slate-50/70 shadow-none focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60">
+                      <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Draft">Draft</SelectItem>
@@ -219,15 +265,18 @@ export default function RequirementForm({ update, data }: Props) {
               />
             </div>
 
-            <div className="flex w-full flex-col gap-2">
-              <Label className="text-xs">Sprint</Label>
+            <div className="flex w-full flex-col gap-2 md:col-span-2">
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <ListChecks className="size-4 text-sky-600 dark:text-sky-400" />
+                Sprint
+              </Label>
               <Controller
                 control={control}
                 name="sprint_ID"
                 render={({ field }) => (
                   <Select value={field.value || ""} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-11 w-full rounded-xl">
-                      <SelectValue placeholder="Select Sprint" />
+                    <SelectTrigger className="h-11 w-full border-slate-200 bg-slate-50/70 shadow-none focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60">
+                      <SelectValue placeholder="Select sprint" />
                     </SelectTrigger>
                     <SelectContent>
                       {sprints.map((sprint) => (
@@ -241,29 +290,97 @@ export default function RequirementForm({ update, data }: Props) {
               />
             </div>
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Controller
-              control={control}
-              name="description"
-              render={({ field }) => (
-                <RichTextEditor
-                  value={field.value || ""}
-                  onChange={field.onChange}
-                  placeholder="Write detailed requirement description..."
-                  minHeightClassName="min-h-[220px]"
-                  mentionItems={mentionItems}
-                />
-              )}
-            />
+        <aside className="rounded-lg border border-sky-100 bg-sky-50/70 p-4 dark:border-sky-950/70 dark:bg-sky-950/20">
+          <p className="text-xs font-semibold uppercase text-sky-700 dark:text-sky-300">
+            Requirement Summary
+          </p>
+          <div className="mt-4 space-y-3 text-sm">
+            <div>
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {selectedPriority || "Priority not set"}
+              </p>
+              <p className="mt-1 text-slate-600 dark:text-slate-400">
+                Priority helps teams sequence testing effort.
+              </p>
+            </div>
+            <div className="border-t border-sky-200/70 pt-3 dark:border-sky-900/70">
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {selectedStatus || "Status not set"}
+              </p>
+              <p className="mt-1 text-slate-600 dark:text-slate-400">
+                Keep status aligned with review readiness.
+              </p>
+            </div>
+            <div className="border-t border-sky-200/70 pt-3 dark:border-sky-900/70">
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {selectedSprintName}
+              </p>
+              <p className="mt-1 text-slate-600 dark:text-slate-400">
+                Sprint assignment keeps delivery traceable.
+              </p>
+            </div>
           </div>
+        </aside>
+      </div>
 
-          <Button type="submit" className="h-11 w-full">
-            {update ? "Update Requirement" : "Add Requirement"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70 sm:p-5">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">
+            <AlignLeft className="size-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+              Description
+            </h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Add acceptance notes, context, and mention teammates.
+            </p>
+          </div>
+        </div>
+
+        <Controller
+          control={control}
+          name="description"
+          render={({ field }) => (
+            <RichTextEditor
+              value={field.value || ""}
+              onChange={field.onChange}
+              placeholder="Write detailed requirement description..."
+              className="border-slate-200 bg-slate-50/70 shadow-none focus-within:border-emerald-500 focus-within:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60"
+              minHeightClassName="min-h-[220px]"
+              mentionItems={mentionItems}
+            />
+          )}
+        />
+      </div>
+
+      <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 dark:border-slate-800 sm:flex-row sm:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 sm:min-w-28"
+          onClick={() => navigate("/admin/requirements")}
+        >
+          <X className="size-4" />
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="h-10 bg-emerald-600 text-white shadow-sm shadow-emerald-900/10 hover:bg-emerald-700 sm:min-w-44 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-emerald-400"
+        >
+          <Save className="size-4" />
+          {isSubmitting
+            ? update
+              ? "Updating..."
+              : "Creating..."
+            : update
+              ? "Update Requirement"
+              : "Create Requirement"}
+        </Button>
+      </div>
+    </form>
   )
 }

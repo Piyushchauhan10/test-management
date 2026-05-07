@@ -2,11 +2,24 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import {
+  AlignLeft,
+  Bug,
+  ClipboardCheck,
+  Flag,
+  FolderKanban,
+  ListChecks,
+  Save,
+  Sparkles,
+  Target,
+  UserCheck,
+  UserSearch,
+  X,
+} from "lucide-react";
 
 import useHttp from "@/hooks/use-http";
 import { ApiRequestError } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
@@ -94,23 +107,50 @@ export default function DefectForm({ update, data }: Props) {
   const [testCycles, setTestCycles] = useState<TestCycle[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
-  const { control, register, handleSubmit, reset, setValue, watch } =
-    useForm<FormData>({
-      defaultValues: {
-        title: data?.title ?? "",
-        description: data?.description ?? "",
-        severity: data?.severity ?? "",
-        status: data?.status ?? "",
-        project_ID: activeProjectId,
-        sprint_ID: data?.targetCycle?.sprint_ID ?? "",
-        testCycle_ID: data?.targetCycle_ID ?? data?.detectedCycle_ID ?? "",
-        assignedTo_ID: data?.assignedTo_ID ?? "",
-        detectedBy_ID: data?.detectedBy_ID ?? "",
-      },
-    });
+  const {
+    control,
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { isSubmitting },
+  } = useForm<FormData>({
+    defaultValues: {
+      title: data?.title ?? "",
+      description: data?.description ?? "",
+      severity: data?.severity ?? "",
+      status: data?.status ?? "",
+      project_ID: activeProjectId,
+      sprint_ID: data?.targetCycle?.sprint_ID ?? "",
+      testCycle_ID: data?.targetCycle_ID ?? data?.detectedCycle_ID ?? "",
+      assignedTo_ID: data?.assignedTo_ID ?? "",
+      detectedBy_ID: data?.detectedBy_ID ?? "",
+    },
+  });
 
   const selectedProjectId = watch("project_ID");
   const selectedSprintId = watch("sprint_ID");
+  const selectedSeverity = watch("severity");
+  const selectedStatus = watch("status");
+  const selectedCycleId = watch("testCycle_ID");
+  const selectedAssigneeId = watch("assignedTo_ID");
+  const selectedReporterId = watch("detectedBy_ID");
+  const selectedProjectName =
+    projects.find((project) => project.ID === selectedProjectId)?.name ||
+    "Current project";
+  const selectedSprintName =
+    sprints.find((sprint) => sprint.ID === selectedSprintId)?.name ||
+    "No sprint";
+  const selectedCycleName =
+    testCycles.find((cycle) => cycle.ID === selectedCycleId)?.name ||
+    "No test cycle";
+  const selectedAssigneeName =
+    users.find((user) => user.ID === selectedAssigneeId)?.username ||
+    "Unassigned";
+  const selectedReporterName =
+    users.find((user) => user.ID === selectedReporterId)?.username ||
+    "Not specified";
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -317,17 +357,41 @@ export default function DefectForm({ update, data }: Props) {
   };
 
   return (
-    <Card className="border-0 shadow-none">
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Title</Label>
-              <Input {...register("title")} placeholder="Enter defect title" />
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70 sm:p-5">
+          <div className="mb-5 flex items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+              <Sparkles className="size-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                Defect Details
+              </h3>
+              {/* <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Capture the problem, impact level, and current workflow state.
+              </p> */}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <Bug className="size-4 text-emerald-600 dark:text-emerald-400" />
+                Title
+              </Label>
+              <Input
+                {...register("title")}
+                placeholder="Enter defect title"
+                className="h-11 border-slate-200 bg-slate-50/70 shadow-none transition focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60"
+              />
             </div>
 
             <div className="space-y-2">
-              <Label>Project</Label>
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <FolderKanban className="size-4 text-sky-600 dark:text-sky-400" />
+                Project
+              </Label>
               <Controller
                 control={control}
                 name="project_ID"
@@ -341,7 +405,7 @@ export default function DefectForm({ update, data }: Props) {
                       setValue("testCycle_ID", "");
                     }}
                   >
-                    <SelectTrigger className="h-11 w-full bg-gray-100 cursor-not-allowed">
+                    <SelectTrigger className="h-11 w-full cursor-not-allowed border-slate-200 bg-slate-100/80 text-slate-500 shadow-none dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-400">
                       <SelectValue placeholder="Select project" />
                     </SelectTrigger>
 
@@ -358,7 +422,10 @@ export default function DefectForm({ update, data }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label>Sprint</Label>
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <ListChecks className="size-4 text-emerald-600 dark:text-emerald-400" />
+                Sprint
+              </Label>
               <Controller
                 control={control}
                 name="sprint_ID"
@@ -371,7 +438,7 @@ export default function DefectForm({ update, data }: Props) {
                     }}
                     disabled={!selectedProjectId}
                   >
-                    <SelectTrigger className="h-11 w-full">
+                    <SelectTrigger className="h-11 w-full border-slate-200 bg-slate-50/70 shadow-none focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60">
                       <SelectValue placeholder="Select sprint" />
                     </SelectTrigger>
 
@@ -389,7 +456,10 @@ export default function DefectForm({ update, data }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label>Test Cycle</Label>
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <Target className="size-4 text-sky-600 dark:text-sky-400" />
+                Test Cycle
+              </Label>
               <Controller
                 control={control}
                 name="testCycle_ID"
@@ -401,7 +471,7 @@ export default function DefectForm({ update, data }: Props) {
                     }
                     disabled={!selectedProjectId || !selectedSprintId}
                   >
-                    <SelectTrigger className="h-11 w-full">
+                    <SelectTrigger className="h-11 w-full border-slate-200 bg-slate-50/70 shadow-none focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60">
                       <SelectValue placeholder="Select test cycle" />
                     </SelectTrigger>
 
@@ -419,7 +489,10 @@ export default function DefectForm({ update, data }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label>Severity</Label>
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <Flag className="size-4 text-amber-600 dark:text-amber-400" />
+                Severity
+              </Label>
               <Controller
                 control={control}
                 name="severity"
@@ -428,7 +501,7 @@ export default function DefectForm({ update, data }: Props) {
                     value={field.value || ""}
                     onValueChange={field.onChange}
                   >
-                    <SelectTrigger className="h-11 w-full">
+                    <SelectTrigger className="h-11 w-full border-slate-200 bg-slate-50/70 shadow-none focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60">
                       <SelectValue placeholder="Select severity" />
                     </SelectTrigger>
 
@@ -446,7 +519,10 @@ export default function DefectForm({ update, data }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <ClipboardCheck className="size-4 text-teal-600 dark:text-teal-400" />
+                Status
+              </Label>
               <Controller
                 control={control}
                 name="status"
@@ -455,7 +531,7 @@ export default function DefectForm({ update, data }: Props) {
                     value={field.value || ""}
                     onValueChange={field.onChange}
                   >
-                    <SelectTrigger className="h-11 w-full">
+                    <SelectTrigger className="h-11 w-full border-slate-200 bg-slate-50/70 shadow-none focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
 
@@ -471,7 +547,10 @@ export default function DefectForm({ update, data }: Props) {
             </div>
 
             <div className="space-y-2 ">
-              <Label>Assign To</Label>
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <UserCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+                Assign To
+              </Label>
               <Controller
                 control={control}
                 name="assignedTo_ID"
@@ -482,7 +561,7 @@ export default function DefectForm({ update, data }: Props) {
                       field.onChange(value === NONE_VALUE ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-11 w-full">
+                    <SelectTrigger className="h-11 w-full border-slate-200 bg-slate-50/70 shadow-none focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60">
                       <SelectValue placeholder="Assign defect to a user" />
                     </SelectTrigger>
 
@@ -500,7 +579,10 @@ export default function DefectForm({ update, data }: Props) {
             </div>
 
             <div className="space-y-2">
-              <Label>Detected By</Label>
+              <Label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <UserSearch className="size-4 text-sky-600 dark:text-sky-400" />
+                Detected By
+              </Label>
               <Controller
                 control={control}
                 name="detectedBy_ID"
@@ -511,7 +593,7 @@ export default function DefectForm({ update, data }: Props) {
                       field.onChange(value === NONE_VALUE ? "" : value)
                     }
                   >
-                    <SelectTrigger className="h-11 w-full">
+                    <SelectTrigger className="h-11 w-full border-slate-200 bg-slate-50/70 shadow-none focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60">
                       <SelectValue placeholder="Select user who detected the defect" />
                     </SelectTrigger>
 
@@ -528,28 +610,137 @@ export default function DefectForm({ update, data }: Props) {
               />
             </div>
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Controller
-              control={control}
-              name="description"
-              render={({ field }) => (
-                <RichTextEditor
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Write the defect details, impact, and context..."
-                  mentionItems={mentionItems}
-                />
-              )}
-            />
+        <aside className="rounded-lg border border-sky-100 bg-sky-50/70 p-4 dark:border-sky-950/70 dark:bg-sky-950/20">
+          <p className="text-xs font-semibold uppercase text-sky-700 dark:text-sky-300">
+            Defect Summary
+          </p>
+          <div className="mt-4 space-y-3 text-sm">
+            <div>
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {selectedSeverity || "Severity not set"}
+              </p>
+              <p className="mt-1 text-slate-600 dark:text-slate-400">
+                Severity helps triage release and testing risk.
+              </p>
+            </div>
+            <div className="border-t border-sky-200/70 pt-3 dark:border-sky-900/70">
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {selectedStatus || "Status not set"}
+              </p>
+              <p className="mt-1 text-slate-600 dark:text-slate-400">
+                Keep workflow state visible for the team.
+              </p>
+            </div>
+            <div className="border-t border-sky-200/70 pt-3 dark:border-sky-900/70">
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {selectedAssigneeName}
+              </p>
+              <p className="mt-1 text-slate-600 dark:text-slate-400">
+                Assigned owner for follow-up and resolution.
+              </p>
+            </div>
           </div>
+        </aside>
+      </div>
 
-          <Button type="submit" className="w-full">
-            {update ? "Update Defect" : "Create Defect"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70 sm:p-5">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300">
+            <AlignLeft className="size-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+              Description
+            </h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Add steps, impact, expected behavior, actual behavior, and mention teammates.
+            </p>
+          </div>
+        </div>
+
+        <Controller
+          control={control}
+          name="description"
+          render={({ field }) => (
+            <RichTextEditor
+              value={field.value}
+              onChange={field.onChange}
+              placeholder="Write the defect details, impact, and context..."
+              className="border-slate-200 bg-slate-50/70 shadow-none focus-within:border-emerald-500 focus-within:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60"
+              minHeightClassName="min-h-[220px]"
+              mentionItems={mentionItems}
+            />
+          )}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70 sm:p-5">
+          <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+            Placement
+          </p>
+          <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+            <div>
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {selectedProjectName}
+              </p>
+              <p className="mt-1 text-slate-500 dark:text-slate-400">Project</p>
+            </div>
+            <div>
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {selectedSprintName}
+              </p>
+              <p className="mt-1 text-slate-500 dark:text-slate-400">Sprint</p>
+            </div>
+            <div>
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {selectedCycleName}
+              </p>
+              <p className="mt-1 text-slate-500 dark:text-slate-400">Test cycle</p>
+            </div>
+          </div>
+        </div>
+
+        <aside className="rounded-lg border border-sky-100 bg-sky-50/70 p-4 dark:border-sky-950/70 dark:bg-sky-950/20">
+          <p className="text-xs font-semibold uppercase text-sky-700 dark:text-sky-300">
+            Reporter
+          </p>
+          <p className="mt-4 text-sm font-medium text-slate-900 dark:text-slate-100">
+            {selectedReporterName}
+          </p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Person who detected or reported the defect.
+          </p>
+        </aside>
+      </div>
+
+      <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 dark:border-slate-800 sm:flex-row sm:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 sm:min-w-28"
+          onClick={() => navigate("/admin/defects")}
+        >
+          <X className="size-4" />
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="h-10 bg-emerald-600 text-white shadow-sm shadow-emerald-900/10 hover:bg-emerald-700 sm:min-w-40 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-emerald-400"
+        >
+          <Save className="size-4" />
+          {isSubmitting
+            ? update
+              ? "Updating..."
+              : "Creating..."
+            : update
+              ? "Update Defect"
+              : "Create Defect"}
+        </Button>
+      </div>
+    </form>
   );
 }

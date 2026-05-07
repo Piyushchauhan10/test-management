@@ -227,14 +227,16 @@ export default function ProjectDetail() {
 
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/admin/project">Projects</Link>
+                <Link to="/admin/project">Project</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
 
             <BreadcrumbSeparator />
 
             <BreadcrumbItem>
-              <BreadcrumbPage>Sprints</BreadcrumbPage>
+              <BreadcrumbPage>
+                {projectName || "Project"}
+              </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>

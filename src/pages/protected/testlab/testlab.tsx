@@ -150,11 +150,12 @@ const getVisibleTree = (
       testCasesByFolder,
     );
     const matches = node.name.toLowerCase().includes(normalizedQuery);
-    const matchesTestCase = (testCasesByFolder[node.ID] || []).some((testCase) =>
-      [testCase.title, testCase.preconditions || "", testCase.priority || ""]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedQuery),
+    const matchesTestCase = (testCasesByFolder[node.ID] || []).some(
+      (testCase) =>
+        [testCase.title, testCase.preconditions || "", testCase.priority || ""]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery),
     );
 
     if (matches || matchesTestCase || visibleChildren.length) {
@@ -267,7 +268,9 @@ export default function TestLab() {
 
   const fetchSprints = async () => {
     const activeProjectId =
-      typeof window !== "undefined" ? window.localStorage.getItem("projectId") || "" : "";
+      typeof window !== "undefined"
+        ? window.localStorage.getItem("projectId") || ""
+        : "";
     const url = activeProjectId
       ? `${SPRINT_API}?$filter=project_ID eq '${activeProjectId}'`
       : SPRINT_API;
@@ -280,7 +283,10 @@ export default function TestLab() {
     setSprints(nextSprints);
 
     setSelectedSprint((current) => {
-      if (current && nextSprints.some((sprint: Sprint) => sprint.ID === current)) {
+      if (
+        current &&
+        nextSprints.some((sprint: Sprint) => sprint.ID === current)
+      ) {
         return current;
       }
 
@@ -315,7 +321,10 @@ export default function TestLab() {
   const testCasesByFolder = useMemo(
     () =>
       testCases.reduce<Record<string, TestCase[]>>((acc, testCase) => {
-        acc[testCase.folder_ID] = [...(acc[testCase.folder_ID] || []), testCase];
+        acc[testCase.folder_ID] = [
+          ...(acc[testCase.folder_ID] || []),
+          testCase,
+        ];
         return acc;
       }, {}),
     [testCases],
@@ -327,9 +336,10 @@ export default function TestLab() {
   const testStepsByTestCase = useMemo(
     () =>
       testSteps.reduce<Record<string, TestStep[]>>((acc, testStep) => {
-        acc[testStep.testCase_ID] = [...(acc[testStep.testCase_ID] || []), testStep].sort(
-          (a, b) => a.stepNumber - b.stepNumber,
-        );
+        acc[testStep.testCase_ID] = [
+          ...(acc[testStep.testCase_ID] || []),
+          testStep,
+        ].sort((a, b) => a.stepNumber - b.stepNumber);
         return acc;
       }, {}),
     [testSteps],
@@ -355,7 +365,8 @@ export default function TestLab() {
 
     try {
       const store = loadAssignments();
-      const currentAssignments = store.sprintAssignments?.[selectedSprint] || [];
+      const currentAssignments =
+        store.sprintAssignments?.[selectedSprint] || [];
 
       if (currentAssignments.includes(folderId)) {
         toast.info("Folder is already in the right tree");
@@ -387,7 +398,8 @@ export default function TestLab() {
 
     try {
       const store = loadAssignments();
-      const currentAssignments = store.sprintAssignments?.[selectedSprint] || [];
+      const currentAssignments =
+        store.sprintAssignments?.[selectedSprint] || [];
 
       writeTestLabStore({
         ...store,
@@ -456,7 +468,7 @@ export default function TestLab() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-6">
+    <div className="w-full bg-slate-50 p-4 md:p-6 overflow-visible">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader className="border-b pb-4">
@@ -498,7 +510,7 @@ export default function TestLab() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="min-h-[520px] p-4">
+            <CardContent className="p-4">
               {filteredTree.length ? (
                 <div className="space-y-1">
                   {filteredTree.map((node) => (
@@ -530,7 +542,7 @@ export default function TestLab() {
                 Right Tree (Drop)
               </CardTitle>
             </CardHeader>
-            <CardContent className="min-h-[520px] p-4">
+            <CardContent className="p-4">
               <div
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={(event) => {
@@ -540,7 +552,7 @@ export default function TestLab() {
                     void handleAssignFolder(folderId);
                   }
                 }}
-                className={`min-h-[488px] rounded-xl border border-dashed p-4 transition ${
+                className={`rounded-xl border border-dashed p-4 transition ${
                   selectedSprint
                     ? "border-slate-300 bg-white"
                     : "border-slate-200 bg-slate-100"
@@ -626,7 +638,8 @@ function SourceTreeItem({
 }) {
   const [open, setOpen] = useState(level === 0);
   const folderTestCases = testCasesByFolder[node.ID] || [];
-  const hasChildren = Boolean(node.children?.length) || folderTestCases.length > 0;
+  const hasChildren =
+    Boolean(node.children?.length) || folderTestCases.length > 0;
   const isExpanded = open || Boolean(searchTerm);
 
   return (

@@ -636,7 +636,7 @@ export default function TestLibrary() {
             <ui5-flexible-column-layout
               ref={fclRef}
               layout={layout}
-              className="block h-[calc(100vh-11rem)] w-full bg-transparent"
+              className="block w-full bg-transparent"
             >
               <section
                 slot="startColumn"
@@ -670,7 +670,7 @@ export default function TestLibrary() {
                   <span>{selectedFolder ? selectedFolder.children?.length ?? 0 : 0} children</span>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+                <div className="px-3 pb-3">
                   {filteredTree.length ? (
                     filteredTree.map((node) => (
                       <TreeItem

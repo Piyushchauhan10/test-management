@@ -142,7 +142,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <div
           style={{
             height: "1px",
-            background: "#e5e7eb",
+            background: "color-mix(in srgb, var(--sidebar-border) 78%, transparent)",
             margin: "10px 12px",
           }}
         />
@@ -153,7 +153,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <div
           style={{
             height: "1px",
-            background: "#e5e7eb",
+            background: "color-mix(in srgb, var(--sidebar-border) 78%, transparent)",
             margin: "10px 12px",
           }}
         />

@@ -1,4 +1,4 @@
-import { cn, stripHtml, truncateText } from "@/lib/utils"
+import { cn, decodeHtmlEntities, stripHtml, truncateText } from "@/lib/utils"
 
 type RichTextContentProps = {
   value?: string | null
@@ -13,6 +13,7 @@ export function RichTextContent({
   plainTextFallback = "—",
   clamp,
 }: RichTextContentProps) {
+  const htmlValue = decodeHtmlEntities(value)
   const textValue = stripHtml(value)
 
   if (!textValue) {
@@ -33,7 +34,7 @@ export function RichTextContent({
         "[&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_li]:ml-4 [&_ol]:list-decimal [&_p]:leading-6 [&_ul]:list-disc",
         className
       )}
-      dangerouslySetInnerHTML={{ __html: value || plainTextFallback }}
+      dangerouslySetInnerHTML={{ __html: htmlValue || plainTextFallback }}
     />
   )
 }

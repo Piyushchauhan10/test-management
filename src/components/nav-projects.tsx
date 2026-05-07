@@ -7,15 +7,24 @@ import {
 } from "@/components/ui/sidebar"
 import useHttp from "@/hooks/use-http"
 import React from "react"
+import { Link, useLocation } from "react-router-dom"
+import { ProjectContext } from "@/store/project-store"
+
+type Project = {
+  ID: string
+  name: string
+}
 
 export function NavProjects() {
   const httpHook = useHttp()
-  const [projects, setProjects] = React.useState<any[]>([])
+  const location = useLocation()
+  const { setCurrentProject } = React.useContext(ProjectContext)
+  const [projects, setProjects] = React.useState<Project[]>([])
 
   const getProjects = async () => {
     const response = await httpHook.sendRequest(import.meta.env.VITE_BACKEND_API_URL + "/Projects")
 
-    if (response.success) setProjects(response.data);
+    if (response.success) setProjects(response.data)
   }
 
   React.useEffect(() => {
@@ -26,48 +35,26 @@ export function NavProjects() {
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Projects</SidebarGroupLabel>
       <SidebarMenu>
-        {projects.map((project, index: number) => (
-          <SidebarMenuItem key={index}>
-            <SidebarMenuButton asChild>
-              <a href={`/admin/project/${project.ID}/sprints`}>
-                <span className="text-sm">{project.name}</span>
-              </a>
-            </SidebarMenuButton>
-            {/* <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuAction showOnHover>
-                  <MoreHorizontal />
-                  <span className="sr-only">More</span>
-                </SidebarMenuAction>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-48 rounded-lg"
-                side={isMobile ? "bottom" : "right"}
-                align={isMobile ? "end" : "start"}
-              >
-                <DropdownMenuItem>
-                  <Folder className="text-muted-foreground" />
-                  <span>View Project</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Forward className="text-muted-foreground" />
-                  <span>Share Project</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Trash2 className="text-muted-foreground" />
-                  <span>Delete Project</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu> */}
-          </SidebarMenuItem>
-        ))}
-        {/* <SidebarMenuItem>
-          <SidebarMenuButton className="text-sidebar-foreground/70">
-            <MoreHorizontal className="text-sidebar-foreground/70" />
-            <span>More</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem> */}
+        {projects.map((project) => {
+          const projectUrl = `/admin/project/${project.ID}/sprints`
+          const isActive = location.pathname.startsWith(projectUrl)
+
+          return (
+            <SidebarMenuItem key={project.ID}>
+              <SidebarMenuButton asChild isActive={isActive}>
+                <Link
+                  to={projectUrl}
+                  onClick={() => {
+                    localStorage.setItem("projectId", project.ID)
+                    setCurrentProject(project.ID)
+                  }}
+                >
+                  <span className="text-sm">{project.name}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )
+        })}
       </SidebarMenu>
     </SidebarGroup>
   )

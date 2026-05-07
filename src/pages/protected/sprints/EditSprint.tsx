@@ -47,7 +47,7 @@ const EditSprint = () => {
       <CardHeader className="flex justify-between">
         <h2 className="text-left">Edit Sprint</h2>
         <Button asChild variant="default">
-          <Link to={`/admin/project/${projectId}`}>Back</Link>
+          <Link to={`/admin/project/${projectId}/sprints`}>Back</Link>
         </Button>
       </CardHeader>
 

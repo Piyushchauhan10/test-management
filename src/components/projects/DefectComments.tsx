@@ -23,13 +23,23 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { stripHtml } from "@/lib/utils"
 import {
+  AlignLeft,
   ChevronDown,
   ChevronRight,
+  ClipboardCheck,
   File,
   Folder,
   FolderTree,
+  MessageSquarePlus,
+  MessagesSquare,
   MoreVertical,
+  Paperclip,
+  Save,
+  Send,
+  Sparkles,
+  UserRound,
   Upload,
+  X,
 } from "lucide-react"
 
 const NONE_VALUE = "__none__"
@@ -502,8 +512,8 @@ export default function DefectComments({ defectId }: Props) {
 
   const commentsContent = (
     <>
-      <section className="flex items-start gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-slate-900 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
+      <section className="grid gap-4 lg:grid-cols-[2.5rem_minmax(0,1fr)]">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-emerald-600 text-sm font-semibold text-white shadow-sm shadow-emerald-900/10 dark:border-emerald-900 dark:bg-emerald-500 dark:text-emerald-950">
           {getUserInitials(
             users.find((user) => user.ID === assignedToId)?.username ||
               defectAssignee?.assignedTo?.username ||
@@ -511,14 +521,22 @@ export default function DefectComments({ defectId }: Props) {
           )}
         </div>
 
-        <div className="min-w-0 flex-1 overflow-hidden rounded-xl border bg-card shadow-sm">
-          <div className="flex flex-col gap-3 border-b bg-muted/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <div className="text-sm font-semibold">Add a comment</div>
+        <div className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+          <div className="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-white px-4 py-4 dark:border-slate-800 dark:from-emerald-950/25 dark:via-teal-950/15 dark:to-slate-950 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white text-emerald-700 shadow-sm dark:bg-emerald-950/50 dark:text-emerald-300">
+                <MessageSquarePlus className="size-4" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                  Add a Comment
+                </div>
+              </div>
             </div>
 
             <div className="w-full sm:w-64">
-              <Label className="mb-2 block text-xs uppercase tracking-wide text-muted-foreground">
+              <Label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-slate-600 dark:text-slate-400">
+                <UserRound className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                 Assignee
               </Label>
               <Select
@@ -528,7 +546,7 @@ export default function DefectComments({ defectId }: Props) {
                 }
                 disabled={assigning}
               >
-                <SelectTrigger className="h-10 w-full bg-background">
+                <SelectTrigger className="h-10 w-full border-slate-200 bg-slate-50/70 shadow-none focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60">
                   <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
 
@@ -551,31 +569,37 @@ export default function DefectComments({ defectId }: Props) {
               placeholder="Write a comment for this defect..."
               minHeightClassName="min-h-[180px]"
               mentionItems={mentionItems}
-              className="rounded-lg border-slate-200 shadow-none"
+              className="border-slate-200 bg-slate-50/70 shadow-none focus-within:border-emerald-500 focus-within:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60"
             />
           </div>
 
-          <div className="flex items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3">
-            <div className="text-xs text-muted-foreground">
+          <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/60 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/35 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
               Supports rich text, code blocks, and `@user` mentions. New comments are posted by the current assignee.
             </div>
 
-            <Button type="button" onClick={submitComment} disabled={saving}>
+            <Button
+              type="button"
+              onClick={submitComment}
+              disabled={saving}
+              className="h-10 bg-emerald-600 text-white shadow-sm shadow-emerald-900/10 hover:bg-emerald-700 sm:min-w-36 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-emerald-400"
+            >
+              <Send className="size-4" />
               {saving ? "Adding Comment..." : "Comment"}
             </Button>
           </div>
         </div>
       </section>
 
-      <section className="relative space-y-5 pl-14 before:absolute before:left-5 before:top-2 before:bottom-2 before:w-px before:bg-border">
+      <section className="relative space-y-5 pl-14 before:absolute before:left-5 before:bottom-2 before:top-2 before:w-px before:bg-emerald-100 dark:before:bg-emerald-950/70">
         {loading && (
-          <div className="rounded-xl border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
             Loading comments...
           </div>
         )}
 
         {!loading && !sortedComments.length && (
-          <div className="rounded-xl border border-dashed bg-muted/20 p-6 text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
             No comments yet for this defect.
           </div>
         )}
@@ -583,25 +607,25 @@ export default function DefectComments({ defectId }: Props) {
         {!loading &&
           sortedComments.map((comment) => (
             <article key={comment.ID} className="relative flex items-start gap-4">
-              <div className="absolute -left-14 top-0 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-background text-sm font-semibold text-foreground shadow-sm">
+              <div className="absolute -left-14 top-0 flex size-10 shrink-0 items-center justify-center rounded-full border border-emerald-100 bg-white text-sm font-semibold text-emerald-700 shadow-sm dark:border-emerald-950 dark:bg-slate-950 dark:text-emerald-300">
                 {getUserInitials(comment.user?.username)}
               </div>
 
-              <div className="min-w-0 flex-1 overflow-hidden rounded-xl border bg-card shadow-sm">
-                <div className="flex items-start justify-between gap-3 border-b bg-muted/35 px-4 py-3">
-                  <div className="flex items-center gap-x-2 justify-between w-full">
+              <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+                <div className="flex items-start justify-between gap-3 border-b border-slate-200 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/45">
+                  <div className="flex w-full items-center justify-between gap-x-2">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                      <span className="font-semibold text-foreground">
+                      <span className="font-semibold text-slate-950 dark:text-slate-50">
                         {comment.user?.username || "Unknown user"}
                       </span>
-                      <span className="text-muted-foreground">commented</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-slate-500 dark:text-slate-400">commented</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
                         {formatTimestamp(comment.timestamp)}
                       </span>
                     </div>
 
                     {comment.user?.email && (
-                      <div className="mt-1 text-xs text-muted-foreground">
+                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         {comment.user.email}
                       </div>
                     )}
@@ -612,7 +636,7 @@ export default function DefectComments({ defectId }: Props) {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="mt-[-2px]"
+                        className="mt-[-2px] text-slate-500 hover:bg-emerald-50 hover:text-emerald-700 dark:text-slate-400 dark:hover:bg-emerald-950/35 dark:hover:text-emerald-300"
                         disabled={deletingCommentId === comment.ID}
                       >
                         <MoreVertical className="h-4 w-4" />
@@ -638,7 +662,8 @@ export default function DefectComments({ defectId }: Props) {
                 {editingCommentId === comment.ID ? (
                   <div className="space-y-4 p-4">
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                      <Label className="flex items-center gap-2 text-xs font-semibold uppercase text-slate-600 dark:text-slate-400">
+                        <MessagesSquare className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                         Edit Comment
                       </Label>
                       <RichTextEditor
@@ -647,24 +672,27 @@ export default function DefectComments({ defectId }: Props) {
                         placeholder="Update this comment..."
                         minHeightClassName="min-h-[170px]"
                         mentionItems={mentionItems}
-                        className="rounded-lg border-slate-200 shadow-none"
+                        className="border-slate-200 bg-slate-50/70 shadow-none focus-within:border-emerald-500 focus-within:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900/60"
                       />
                     </div>
 
-                    <div className="flex justify-end gap-2 border-t pt-4">
+                    <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 dark:border-slate-800 sm:flex-row sm:justify-end">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={cancelEditingComment}
                         disabled={updatingCommentId === comment.ID}
                       >
+                        <X className="size-4" />
                         Cancel
                       </Button>
                       <Button
                         type="button"
                         onClick={() => updateComment(comment.ID)}
                         disabled={updatingCommentId === comment.ID}
+                        className="bg-emerald-600 text-white shadow-sm shadow-emerald-900/10 hover:bg-emerald-700 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-emerald-400"
                       >
+                        <Save className="size-4" />
                         {updatingCommentId === comment.ID
                           ? "Saving..."
                           : "Save Changes"}
@@ -675,7 +703,7 @@ export default function DefectComments({ defectId }: Props) {
                   <div className="p-4">
                     <RichTextContent
                       value={comment.description}
-                      className="text-sm text-left [&_p:first-child]:mt-0"
+                      className="text-left text-sm text-slate-700 dark:text-slate-200 [&_p:first-child]:mt-0"
                       plainTextFallback="No content"
                     />
                   </div>
@@ -689,12 +717,19 @@ export default function DefectComments({ defectId }: Props) {
 
   const attachmentsContent = (
     <section className="space-y-6">
-      <div className="rounded-xl border bg-card shadow-sm">
-        <div className="flex flex-col gap-3 border-b bg-muted/35 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-sm font-semibold">Upload attachments</div>
-            <div className="text-xs text-muted-foreground">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+        <div className="flex flex-col gap-4 border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-white px-4 py-4 dark:border-slate-800 dark:from-emerald-950/25 dark:via-teal-950/15 dark:to-slate-950 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white text-emerald-700 shadow-sm dark:bg-emerald-950/50 dark:text-emerald-300">
+              <Paperclip className="size-4" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+                Upload Attachments
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
               Add multiple files or a whole folder. Uploaded items will appear below.
+              </div>
             </div>
           </div>
 
@@ -727,17 +762,19 @@ export default function DefectComments({ defectId }: Props) {
             <Button
               type="button"
               variant="outline"
+              className="h-10 border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-emerald-950/35 dark:hover:text-emerald-300"
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="h-4 w-4" />
+              <Upload className="size-4" />
               Upload Files
             </Button>
             <Button
               type="button"
               variant="outline"
+              className="h-10 border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-emerald-950/35 dark:hover:text-emerald-300"
               onClick={() => folderInputRef.current?.click()}
             >
-              <FolderTree className="h-4 w-4" />
+              <FolderTree className="size-4" />
               Upload Folder
             </Button>
           </div>
@@ -745,23 +782,23 @@ export default function DefectComments({ defectId }: Props) {
 
         <div className="space-y-3 p-4">
           {!attachments.length && (
-            <div className="rounded-xl border border-dashed bg-muted/20 p-6 text-sm text-muted-foreground">
+            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/70 p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
               No attachments uploaded for this defect yet.
             </div>
           )}
 
           {!!attachments.length && (
-            <div className="overflow-hidden rounded-2xl border bg-[linear-gradient(180deg,rgba(248,250,252,0.95)_0%,rgba(241,245,249,0.9)_100%)]">
-              <div className="flex items-center justify-between border-b bg-white/80 px-4 py-3">
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-900/45">
+              <div className="flex items-center justify-between border-b border-slate-200 bg-white/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/55">
                 <div>
-                  <div className="text-sm font-semibold text-foreground">
+                  <div className="text-sm font-semibold text-slate-950 dark:text-slate-50">
                     Attachment Explorer
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
                     Browse saved files and uploaded folder contents
                   </div>
                 </div>
-                <div className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/45 dark:text-emerald-300">
                   {attachments.length} items
                 </div>
               </div>
@@ -786,55 +823,61 @@ export default function DefectComments({ defectId }: Props) {
 
   return (
     <Card className="border-0 bg-transparent py-0 shadow-none">
-      <CardContent className="space-y-8 px-0 pt-6">
-        <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
-          <div className="border-b bg-muted/35 px-4 py-3">
-            <div className="text-sm font-semibold">Defect details</div>
+      <CardContent className="space-y-6 px-0 pt-0">
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+          <div className="flex items-center gap-3 border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-white px-4 py-4 dark:border-slate-800 dark:from-emerald-950/25 dark:via-teal-950/15 dark:to-slate-950">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white text-emerald-700 shadow-sm dark:bg-emerald-950/50 dark:text-emerald-300">
+              <Sparkles className="size-4" />
+            </div>
+            <div className="text-sm font-semibold text-slate-950 dark:text-slate-50">
+              Defect Details
+            </div>
           </div>
 
           <div className="space-y-6 p-4">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-lg border bg-muted/20 p-3  text-left space-y-2">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-left dark:border-slate-800 dark:bg-slate-900/45">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+                  <ClipboardCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                   Title
                 </div>
-                <div className="mt-1 text-sm font-medium text-foreground">
+                <div className="mt-1 text-sm font-medium text-slate-950 dark:text-slate-50">
                   {getValueOrFallback(defectAssignee?.title)}
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-muted/20 p-3  text-left space-y-2">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-left dark:border-slate-800 dark:bg-slate-900/45">
+                <div className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                   Severity
                 </div>
-                <div className="mt-1 text-sm font-medium text-foreground">
+                <div className="mt-1 text-sm font-medium text-slate-950 dark:text-slate-50">
                   {getValueOrFallback(defectAssignee?.severity)}
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-muted/20 p-3  text-left space-y-2">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-left dark:border-slate-800 dark:bg-slate-900/45">
+                <div className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                   Status
                 </div>
-                <div className="mt-1 text-sm font-medium text-foreground">
+                <div className="mt-1 text-sm font-medium text-slate-950 dark:text-slate-50">
                   {getValueOrFallback(defectAssignee?.status)}
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-muted/20 p-3  text-left space-y-2">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-left dark:border-slate-800 dark:bg-slate-900/45">
+                <div className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                   Assignee
                 </div>
-                <div className="mt-1 text-sm font-medium text-foreground">
+                <div className="mt-1 text-sm font-medium text-slate-950 dark:text-slate-50">
                   {getValueOrFallback(defectAssignee?.assignedTo?.username)}
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-muted/20 p-3  text-left space-y-2">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-left dark:border-slate-800 dark:bg-slate-900/45">
+                <div className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                   Detected Cycle
                 </div>
-                <div className="mt-1 text-sm font-medium text-foreground">
+                <div className="mt-1 text-sm font-medium text-slate-950 dark:text-slate-50">
                   {getValueOrFallback(
                     defectAssignee?.detectedCycle?.name ||
                       defectAssignee?.detectedCycle_ID
@@ -842,11 +885,11 @@ export default function DefectComments({ defectId }: Props) {
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-muted/20 p-3  text-left space-y-2">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-left dark:border-slate-800 dark:bg-slate-900/45">
+                <div className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
                   Target Cycle
                 </div>
-                <div className="mt-1 text-sm font-medium text-foreground">
+                <div className="mt-1 text-sm font-medium text-slate-950 dark:text-slate-50">
                   {getValueOrFallback(
                     defectAssignee?.targetCycle?.name ||
                       defectAssignee?.targetCycle_ID
@@ -855,13 +898,14 @@ export default function DefectComments({ defectId }: Props) {
               </div>
             </div>
 
-            <div className="rounded-lg border bg-muted/10 p-4  text-left">
-              <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 text-left dark:border-slate-800 dark:bg-slate-900/35">
+              <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+                <AlignLeft className="size-3.5 text-teal-600 dark:text-teal-400" />
                 Description
               </div>
               <RichTextContent
                 value={defectAssignee?.description || ""}
-                className="text-sm text-foreground [&_p:first-child]:mt-0"
+                className="text-sm text-slate-700 dark:text-slate-200 [&_p:first-child]:mt-0"
                 plainTextFallback="No defect description provided."
               />
             </div>
@@ -869,9 +913,15 @@ export default function DefectComments({ defectId }: Props) {
         </section>
 
         <Tabs defaultValue="comments" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="comments">Comments</TabsTrigger>
-            <TabsTrigger value="attachments">Attachments</TabsTrigger>
+          <TabsList className="grid h-11 w-full grid-cols-2 rounded-lg border border-slate-200 bg-slate-50/70 p-1 dark:border-slate-800 dark:bg-slate-900/45">
+            <TabsTrigger value="comments" className="gap-2 rounded-md data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-950 dark:data-[state=active]:text-emerald-300">
+              <MessagesSquare className="size-4" />
+              Comments
+            </TabsTrigger>
+            <TabsTrigger value="attachments" className="gap-2 rounded-md data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-950 dark:data-[state=active]:text-emerald-300">
+              <Paperclip className="size-4" />
+              Attachments
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="comments" className="space-y-8">
@@ -907,17 +957,17 @@ function AttachmentTreeItem({
       <button
         type="button"
         onClick={() => onToggle(node.path)}
-        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left transition hover:bg-white"
+        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition hover:bg-white dark:hover:bg-slate-950/70"
         style={{ paddingLeft: 12 + level * 18 }}
       >
         {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="size-4 text-slate-500 dark:text-slate-400" />
         ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <ChevronRight className="size-4 text-slate-500 dark:text-slate-400" />
         )}
-        <Folder className="h-4 w-4 text-sky-600" />
-        <span className="text-sm font-medium text-foreground">{node.name}</span>
-        <span className="ml-auto text-xs text-muted-foreground">
+        <Folder className="size-4 text-sky-600 dark:text-sky-400" />
+        <span className="text-sm font-medium text-slate-950 dark:text-slate-50">{node.name}</span>
+        <span className="ml-auto text-xs text-slate-500 dark:text-slate-400">
           {node.folders.length + node.files.length} items
         </span>
       </button>
@@ -938,18 +988,18 @@ function AttachmentTreeItem({
           {node.files.map((file) => (
             <div
               key={file.id}
-              className="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-white dark:hover:bg-slate-950/70"
               style={{ paddingLeft: 34 + level * 18 }}
             >
-              <div className="rounded-lg bg-white p-2 text-slate-500 shadow-sm">
-                <File className="h-4 w-4" />
+              <div className="rounded-lg bg-white p-2 text-slate-500 shadow-sm dark:bg-slate-950 dark:text-slate-400">
+                <File className="size-4" />
               </div>
 
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-foreground">
+                <div className="truncate text-sm font-medium text-slate-950 dark:text-slate-50">
                   {file.name}
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   {formatFileSize(file.size)} • {formatTimestamp(file.uploadedAt)}
                 </div>
               </div>
@@ -958,6 +1008,7 @@ function AttachmentTreeItem({
                 type="button"
                 variant="ghost"
                 size="sm"
+                className="text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/30 dark:hover:text-red-300"
                 onClick={() => onRemove(file.id)}
               >
                 Remove

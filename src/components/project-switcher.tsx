@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar"
 import { ProjectContext } from "@/store/project-store"
 import { useContext } from "react"
+import { useLocation } from "react-router-dom"
 
 export function ProjectSwitcher({
   projects,
@@ -28,21 +29,23 @@ export function ProjectSwitcher({
   }[]
 }) {
   const { isMobile } = useSidebar()
+  const location = useLocation()
 
-  const { setCurrentProject } = useContext(ProjectContext)
-
-  const [activeProject, setActiveProject] = React.useState<any>({})
+  const { currentProject, setCurrentProject } = useContext(ProjectContext)
 
   React.useEffect(() => {
-    let pId = localStorage.getItem('projectId')
+    const routeProjectId = location.pathname.match(
+      /^\/admin\/project\/([^/]+)/
+    )?.[1]
 
-    if (pId) {
-      let currentProject = projects.find((project) => project.ID == pId)
-
-      setActiveProject(currentProject)
+    if (routeProjectId && routeProjectId !== currentProject) {
+      localStorage.setItem("projectId", routeProjectId)
+      setCurrentProject(routeProjectId)
     }
-    
-  }, [projects.length])
+  }, [currentProject, location.pathname, setCurrentProject])
+
+  const activeProjectId = currentProject || localStorage.getItem("projectId")
+  const activeProject = projects.find((project) => project.ID === activeProjectId)
 
   return (
     <SidebarMenu>
@@ -82,7 +85,6 @@ export function ProjectSwitcher({
               <DropdownMenuItem key={project.ID} className="gap-2 p-2">
                 <Link
                   onClick={() => {
-                    setActiveProject(project)
                     localStorage.setItem("projectId", project.ID as string)
                     setCurrentProject(project.ID as string)
                   }}

@@ -251,7 +251,7 @@ export default function SprintsDetail() {
 
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/admin/project">Projects</Link>
+                <Link to="/admin/project">Project</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
 
@@ -268,17 +268,7 @@ export default function SprintsDetail() {
             <BreadcrumbSeparator />
 
             <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to={`/admin/project/${projectId}/sprints`}>
-                  {sprintName}
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-
-            <BreadcrumbSeparator />
-
-            <BreadcrumbItem>
-              <BreadcrumbPage>Test Cycles</BreadcrumbPage>
+              <BreadcrumbPage>{sprintName || "Sprint"}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
